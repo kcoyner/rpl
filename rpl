@@ -95,7 +95,6 @@ def blockrepl(instream, outstream, regex, before, after, encoding, blocksize=Non
         outstream.write(tonext)
     else:
         outstream.write(tonext.encode(encoding=encoding, errors='ignore'))
-    print(encoding)
     return sum
 
 def main():
@@ -219,12 +218,6 @@ def main():
         try:
             o, tmp_path = tempfile.mkstemp("", ".tmp.")
             o = os.fdopen(o, "wb")
-            """
-            TODO: if opts.encodeen then try/except setting a variable encoding
-            with the value and add as part of the next line. It should
-            probably check against users system locales and if available use
-            it, and if not then error to encoding not available
-            """
         except OSError as e:
             sys.stderr.write("\nrpl: Unable to create temp file.")
             sys.stderr.write("\nrpl: Error: %s" % e)
@@ -237,8 +230,7 @@ def main():
             os.chown(tmp_path, perms.st_uid, perms.st_gid)
             os.chmod(tmp_path, perms.st_mode)
         except OSError as e:
-            sys.stderr.write("\nrpl: Unable to set owner/group/perms of %s"
-                             % filename)
+            sys.stderr.write("\nrpl: Unable to set owner/group/perms of %s" % filename)
             sys.stderr.write("\nrpl: Error: %s" % e)
             if opts.force:
                 sys.stderr.write("\nrpl: WARNING: New owner/group/perms may not match!\n\n")
@@ -253,19 +245,12 @@ def main():
             sys.stderr.write(".")
             sys.stderr.flush()
 
-        """ TODO: this gets rewritten above, but also need something to tell
-        user what we are going to do around line 214
-        """
         if opts.encodeen:
             try:
                 codecs.getencoder(opts.encodeen[0])
-                """ TODO: read from input the encoding desired and compare to whats available in python"""
                 encoding = opts.encodeen[0]
                 opts.do_backup = "True"
-                print('encoding is %s' % encoding)
-                print('backup is: %s' % opts.do_backup)
             except LookupError as e:
-                """ TODO: make this default to UTF-8 """
                 sys.stderr.write("\nrpl: Unable to set encoding of %s." % filename)
                 sys.stderr.write("\nrpl: Error: %s. See https://docs.python.org/3/library/codecs.html#standard-encodings.\n" % e)
                 continue
