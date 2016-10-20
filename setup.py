@@ -11,7 +11,7 @@ from setuptools import setup
 
 DESC = """Free replacement for rpl (replace strings in files)."""
 
-long_description =  (open('README.md').read()
+long_description =  open('README.md').read()
 
 setup(name='rpl',
       version='1.5.6',
