@@ -1,3 +1,7 @@
+
+# debian packaging directory
+debian/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
