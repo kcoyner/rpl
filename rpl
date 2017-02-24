@@ -8,7 +8,7 @@ try:
     import readline
 except ImportError:
     pass
-from stat import *
+from stat import S_ISDIR, S_ISREG
 import sys
 import tempfile
 
