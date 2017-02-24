@@ -130,61 +130,120 @@ def is_python_before_3():
     return sys.version_info < (3,)
 
 
-def main():
-    # First we parse the command line arguments...
+def create_cli_args_parser():
+    """Create command line argument parser."""
     usage = "usage: %prog [options] old_string new_string target_file(s)"
     parser = optparse.OptionParser(usage, version="%prog 1.5.6")
-    parser.add_option("-L", "--license", action="callback",
-                      callback=show_license, help="show the software license")
-    parser.add_option("-x", metavar="SUFFIX",
-                      action="append", dest="suffixen", default=[],
+
+    parser.add_option("-L", "--license",
+                      action="callback",
+                      callback=show_license,
+                      help="show the software license")
+
+    parser.add_option("-x",
+                      metavar="SUFFIX",
+                      action="append",
+                      dest="suffixen",
+                      default=[],
                       help="specify file suffix to match")
+
     parser.add_option("-i", "--ignore-case",
-                      action="store_true", dest="ignore_case", default=False,
+                      action="store_true",
+                      dest="ignore_case",
+                      default=False,
                       help="do a case insensitive match")
+
     parser.add_option("-w", "--whole-words",
-                      action="store_true", dest="whole_words", default=False,
+                      action="store_true",
+                      dest="whole_words",
+                      default=False,
                       help="whole words (old_string matches on word boundaries only)")
+
     parser.add_option("-b", "--backup",
-                      action="store_true", dest="do_backup", default=False,
+                      action="store_true",
+                      dest="do_backup",
+                      default=False,
                       help="make a backup before overwriting files")
+
     parser.add_option("-q", "--quiet",
-                      action="store_true", dest="quiet", default=False,
+                      action="store_true",
+                      dest="quiet",
+                      default=False,
                       help="quiet mode")
+
     parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose", default=False,
+                      action="store_true",
+                      dest="verbose",
+                      default=False,
                       help="verbose mode")
+
     parser.add_option("-s", "--dry-run",
-                      action="store_true", dest="dry_run", default=False,
+                      action="store_true",
+                      dest="dry_run",
+                      default=False,
                       help="simulation mode")
+
     parser.add_option("-R", "--recursive",
-                      action="store_true", dest="recurse", default=False,
+                      action="store_true",
+                      dest="recurse",
+                      default=False,
                       help="recurse into subdirectories")
+
     parser.add_option("-e", "--escape",
-                      action="store_true", dest="escapes", default=False,
+                      action="store_true",
+                      dest="escapes",
+                      default=False,
                       help="expand escapes in old_string and new_string")
+
     parser.add_option("-p", "--prompt",
-                      action="store_true", dest="prompt", default=False,
+                      action="store_true",
+                      dest="prompt",
+                      default=False,
                       help="prompt before modifying each file")
+
     parser.add_option("-f", "--force",
-                      action="store_true", dest="force", default=False,
+                      action="store_true",
+                      dest="force",
+                      default=False,
                       help="ignore errors when trying to preserve permissions")
+
     parser.add_option("-d", "--keep-times",
-                      action="store_true", dest="keep_times", default=False,
+                      action="store_true",
+                      dest="keep_times",
+                      default=False,
                       help="keep the modification times on modified files")
+
     parser.add_option("-t", "--use-tmpdir",
-                      action="store_true", dest="use_tmpdir", default=False,
+                      action="store_true",
+                      dest="use_tmpdir",
+                      default=False,
                       help="use $TMPDIR for storing temporary files")
+
     parser.add_option("-a", "--all",
-                      action="store_true", dest="hidden_files", default=False,
+                      action="store_true",
+                      dest="hidden_files",
+                      default=False,
                       help="do not ignore files and directories starting with .")
-    (opts, args) = parser.parse_args()
+
+    return parser
+
+
+def parse_cli_args():
+    """Parse command line arguments."""
+    parser = create_cli_args_parser()
+    opts, args = parser.parse_args()
 
     # args should now contain old_str, new_str and a list of files/dirs
     if len(args) < 3:
         parser.error("must have at least three arguments")
     if args[0] == "":
         parser.error("must have something to replace")
+
+    return opts, args
+
+
+def main():
+    opts, args = parse_cli_args()
 
     old_str = args[0]
     new_str = args[1]
