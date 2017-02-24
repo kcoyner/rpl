@@ -415,17 +415,18 @@ def main():
 
     # We're about to exit, give a summary
     if not opts.quiet:
+        total_files = len(files)
         if opts.dry_run:
             sys.stderr.write("\nA Total of %lu matches found in %lu file%s searched."
                              % (total_matches,
-                                len(files),
-                                len(files) != 1 and "s" or ""))
+                                total_files,
+                                total_files != 1 and "s" or ""))
             sys.stderr.write("\nNone replaced (simulation mode).\n")
         else:
             sys.stderr.write("\nA Total of %lu matches replaced in %lu file%s searched.\n"
                              % (total_matches,
-                                len(files),
-                                len(files) != 1 and "s" or ""))
+                                total_files,
+                                total_files != 1 and "s" or ""))
 
 
 if __name__ == "__main__":
