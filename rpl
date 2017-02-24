@@ -107,17 +107,16 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
         else:
             tonext = u''
 
-        if is_python_before_3():
-            joined_parts = after.join(parts)
-        else:
-            joined_parts = after.join(parts).encode(encoding=encoding, errors='ignore')
+        joined_parts = after.join(parts)
+        if not is_python_before_3():
+            joined_parts = joined_parts.encode(encoding=encoding, errors='ignore')
 
         outstream.write(joined_parts)
 
-    if is_python_before_3():
-        outstream.write(tonext)
-    else:
-        outstream.write(tonext.encode(encoding=encoding, errors='ignore'))
+    if not is_python_before_3():
+        tonext = tonext.encode(encoding=encoding, errors='ignore')
+
+    outstream.write(tonext)
 
     return sum
 
