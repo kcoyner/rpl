@@ -13,6 +13,9 @@ import sys
 import tempfile
 
 
+VERSION = "1.5.6"
+
+
 def show_license(*eat):
     print("""rpl - replace strings in files
 Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
@@ -133,7 +136,7 @@ def is_python_before_3():
 def create_cli_args_parser():
     """Create command line argument parser."""
     usage = "usage: %prog [options] old_string new_string target_file(s)"
-    parser = optparse.OptionParser(usage, version="%prog 1.5.6")
+    parser = optparse.OptionParser(usage, version="%prog " + VERSION)
 
     parser.add_option("-L", "--license",
                       action="callback",
