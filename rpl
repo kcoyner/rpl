@@ -107,19 +107,24 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
         else:
             tonext = u''
 
-        if sys.version_info < (3,):
+        if is_python_before_3():
             parts = after.join(parts)
         else:
             parts = after.join(parts).encode(encoding=encoding, errors='ignore')
 
         outstream.write(parts)
 
-    if sys.version_info < (3,):
+    if is_python_before_3():
         outstream.write(tonext)
     else:
         outstream.write(tonext.encode(encoding=encoding, errors='ignore'))
 
     return sum
+
+
+def is_python_before_3():
+    """Return `True` if Python's version is below 3.x."""
+    return sys.version_info < (3,)
 
 
 def main():
