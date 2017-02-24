@@ -70,8 +70,7 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
                     sys.stderr.write("Directory: %s skipped.\n" % filename)
                 continue
         elif S_ISREG(perms.st_mode):
-            if suffixen != [] and \
-                   True not in [filename.endswith(s) for s in suffixen]:
+            if suffixen and True not in [filename.endswith(s) for s in suffixen]:
                 sys.stderr.write("Skipping: %s (suffix not in list)\n" % filename)
                 continue
 
