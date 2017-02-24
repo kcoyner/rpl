@@ -40,8 +40,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
 
 def get_files(filenames, recurse, suffixen, verbose, hidden_files):
-    new_files = []
-
+    """Yield (filename, permissions) pairs."""
     for filename in filenames:
         try:
             perms = os.lstat(filename)
@@ -63,8 +62,11 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
                                              % os.path.join(filename, f))
                         continue
 
-                    new_files += get_files([os.path.join(filename, f)],
-                                           recurse, suffixen, verbose, hidden_files)
+                    subdir_files = get_files([os.path.join(filename, f)],
+                                             recurse, suffixen, verbose, hidden_files)
+
+                    for subdir_file in subdir_files:
+                        yield subdir_file
             else:
                 if verbose:
                     sys.stderr.write("Directory: %s skipped.\n" % filename)
@@ -74,11 +76,9 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
                 sys.stderr.write("Skipping: %s (suffix not in list)\n" % filename)
                 continue
 
-            new_files += [(filename, perms)]
+            yield filename, perms
         else:
             sys.stderr.write("Skipping: %s (not a regular file)\n" % filename)
-
-    return new_files
 
 
 def unescape(s):
@@ -300,9 +300,12 @@ def main():
     else:
         regex = re.compile(re.escape(old_str), opts.ignore_case and re.I or 0)
 
+    total_files = 0
     total_matches = 0
     files = get_files(files, opts.recurse, opts.suffixen, opts.verbose, opts.hidden_files)
     for filename, perms in files:
+        total_files += 1
+
         # Open the input file
         try:
             f = open(filename, "rb")
@@ -415,7 +418,6 @@ def main():
 
     # We're about to exit, give a summary
     if not opts.quiet:
-        total_files = len(files)
         if opts.dry_run:
             sys.stderr.write("\nA Total of %lu matches found in %lu file%s searched."
                              % (total_matches,
