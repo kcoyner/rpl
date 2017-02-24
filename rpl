@@ -70,6 +70,10 @@ def unescape(s):
 
 def blockrepl(instream, outstream, regex, before, after, blocksize=None):
     encoding = locale.getdefaultlocale()[1]
+    if encoding is None:
+        sys.stderr.write("Could not determine default locale.")
+        sys.exit(os.EX_CONFIG)
+
     patlen = len(before)
     sum = 0
     if not blocksize: blocksize = 2*patlen
