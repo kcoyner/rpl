@@ -108,17 +108,21 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
             tonext = u''
 
         joined_parts = after.join(parts)
-        if not is_python_before_3():
-            joined_parts = joined_parts.encode(encoding=encoding, errors='ignore')
-
+        joined_parts = encode_if_necessary(joined_parts, encoding)
         outstream.write(joined_parts)
 
-    if not is_python_before_3():
-        tonext = tonext.encode(encoding=encoding, errors='ignore')
-
+    tonext = encode_if_necessary(tonext, encoding)
     outstream.write(tonext)
 
     return sum
+
+
+def encode_if_necessary(s, encoding):
+    """Encode string as of Python 3.x."""
+    if is_python_before_3():
+        return s
+    else:
+        return s.encode(encoding=encoding, errors='ignore')
 
 
 def is_python_before_3():
