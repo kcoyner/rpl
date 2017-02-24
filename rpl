@@ -53,7 +53,7 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
         if S_ISDIR(perms.st_mode):
             if recurse:
                 if verbose:
-                    sys.stderr.write("Scanning Directory: %s\n" % filename)
+                    sys.stderr.write("Scanning directory: %s\n" % filename)
 
                 for f in os.listdir(filename):
                     if not hidden_files and f.startswith('.'):
@@ -267,7 +267,7 @@ def main():
 
         line = raw_input()
         if line != "" and line[0] in "nN":
-            sys.stderr.write("\nrpl:  User cancelled operation.\n")
+            sys.stderr.write("\nrpl: User cancelled operation.\n")
             sys.exit(os.EX_TEMPFAIL)
 
     # Tell the user what is going to happen
@@ -376,14 +376,14 @@ def main():
             continue
 
         if opts.prompt:
-            sys.stderr.write("\nSave '%s' ? ([Y]/N) " % filename)
+            sys.stderr.write("\nSave '%s'? ([Y]/N) " % filename)
 
             line = ""
             while line == "" or line[0] not in "Yy\nnN":
                 line = raw_input()
 
             if line[0] in "nN":
-                sys.stderr.write("Not Saved.\n")
+                sys.stderr.write("Not saved.\n")
                 os.unlink(tmp_path)
                 continue
 
@@ -419,13 +419,13 @@ def main():
     # We're about to exit, give a summary
     if not opts.quiet:
         if opts.dry_run:
-            sys.stderr.write("\nA Total of %lu matches found in %lu file%s searched."
+            sys.stderr.write("\nA total of %lu matches found in %lu file%s searched."
                              % (total_matches,
                                 total_files,
                                 total_files != 1 and "s" or ""))
             sys.stderr.write("\nNone replaced (simulation mode).\n")
         else:
-            sys.stderr.write("\nA Total of %lu matches replaced in %lu file%s searched.\n"
+            sys.stderr.write("\nA total of %lu matches replaced in %lu file%s searched.\n"
                              % (total_matches,
                                 total_files,
                                 total_files != 1 and "s" or ""))
