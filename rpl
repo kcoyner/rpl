@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 
-import optparse, sys, os, tempfile, re, locale
-try: import readline
-except ImportError: pass
-from stat import *
+import locale
+import optparse
+import os
+import re
+try:
+    import readline
+except ImportError:
+    pass
+from stat import S_ISDIR, S_ISREG
+import sys
+import tempfile
+
+
+VERSION = "1.5.6"
+
 
 def show_license(*eat):
-    print ("""rpl - replace strings in files
+    print("""rpl - replace strings in files
 Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
 Copyright (C) 2004 Christian Haggstrom <chm@c00.info>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
@@ -27,8 +38,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 """)
     sys.exit(0)
 
+
 def get_files(filenames, recurse, suffixen, verbose, hidden_files):
-    new_files = []
+    """Yield (filename, permissions) pairs."""
     for filename in filenames:
         try:
             perms = os.lstat(filename)
@@ -41,117 +53,199 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
         if S_ISDIR(perms.st_mode):
             if recurse:
                 if verbose:
-                    sys.stderr.write("Scanning Directory: %s\n" % filename)
+                    sys.stderr.write("Scanning directory: %s\n" % filename)
+
                 for f in os.listdir(filename):
                     if not hidden_files and f.startswith('.'):
                         if verbose:
                             sys.stderr.write("Skipping: %s (hidden)\n"
                                              % os.path.join(filename, f))
                         continue
-                    new_files += get_files([os.path.join(filename, f)],
-                                           recurse, suffixen, verbose, hidden_files)
+
+                    subdir_files = get_files([os.path.join(filename, f)],
+                                             recurse, suffixen, verbose, hidden_files)
+
+                    for subdir_file in subdir_files:
+                        yield subdir_file
             else:
                 if verbose:
                     sys.stderr.write("Directory: %s skipped.\n" % filename)
                 continue
         elif S_ISREG(perms.st_mode):
-            if suffixen != [] and \
-                   not True in [ filename.endswith(s) for s in suffixen ]:
+            if suffixen and not any(filename.endswith(s) for s in suffixen):
                 sys.stderr.write("Skipping: %s (suffix not in list)\n" % filename)
                 continue
-            new_files += [(filename, perms)]
+
+            yield filename, perms
         else:
             sys.stderr.write("Skipping: %s (not a regular file)\n" % filename)
-    return new_files
+
 
 def unescape(s):
     regex = re.compile(r'\\([0-7]{1,3}|x[0-9a-fA-F]{2}|[nrtvafb\\])')
     return regex.sub(lambda match: eval('"%s"' % match.group()), s)
 
+
 def blockrepl(instream, outstream, regex, before, after, blocksize=None):
     encoding = locale.getdefaultlocale()[1]
     patlen = len(before)
     sum = 0
-    if not blocksize: blocksize = 2*patlen
+    if not blocksize:
+        blocksize = 2 * patlen
     tonext = u''
+
     while 1:
         block = instream.read(blocksize)
-        if not block: break
+        if not block:
+            break
+
         block = block.decode(encoding='utf-8', errors='ignore')
-        parts = regex.split(tonext+block)
-        sum += len(parts)-1
+        parts = regex.split(tonext + block)
+        sum += len(parts) - 1
         lastpart = parts[-1]
         if lastpart:
             tonext = lastpart[-patlen:]
             parts[-1] = lastpart[:-len(tonext)]
         else:
             tonext = u''
-        if sys.version_info < (3,):
-            parts = after.join(parts)
-        else:
-            parts = (after.join(parts)).encode(encoding=encoding, errors='ignore')
-        outstream.write(parts)
-    if sys.version_info < (3,):
-        outstream.write(tonext)
-    else:
-        outstream.write(tonext.encode(encoding=encoding, errors='ignore'))
+
+        joined_parts = after.join(parts)
+        joined_parts = encode_if_necessary(joined_parts, encoding)
+        outstream.write(joined_parts)
+
+    tonext = encode_if_necessary(tonext, encoding)
+    outstream.write(tonext)
+
     return sum
 
-def main():
-    # First we parse the command line arguments...
+
+def encode_if_necessary(s, encoding):
+    """Encode string as of Python 3.x."""
+    if is_python_before_3():
+        return s
+    else:
+        return s.encode(encoding=encoding, errors='ignore')
+
+
+def is_python_before_3():
+    """Return `True` if Python's version is below 3.x."""
+    return sys.version_info < (3,)
+
+
+def create_cli_args_parser():
+    """Create command line argument parser."""
     usage = "usage: %prog [options] old_string new_string target_file(s)"
-    parser = optparse.OptionParser(usage, version="%prog 1.5.6")
-    parser.add_option("-L", "--license", action="callback",
-                      callback=show_license, help="show the software license")
-    parser.add_option("-x", metavar="SUFFIX",
-                      action="append", dest="suffixen", default=[],
+    parser = optparse.OptionParser(usage, version="%prog " + VERSION)
+
+    parser.add_option("-L", "--license",
+                      action="callback",
+                      callback=show_license,
+                      help="show the software license")
+
+    parser.add_option("-x",
+                      metavar="SUFFIX",
+                      action="append",
+                      dest="suffixen",
+                      default=[],
                       help="specify file suffix to match")
+
     parser.add_option("-i", "--ignore-case",
-                      action="store_true", dest="ignore_case", default=False,
+                      action="store_true",
+                      dest="ignore_case",
+                      default=False,
                       help="do a case insensitive match")
+
     parser.add_option("-w", "--whole-words",
-                      action="store_true", dest="whole_words", default=False,
+                      action="store_true",
+                      dest="whole_words",
+                      default=False,
                       help="whole words (old_string matches on word boundaries only)")
+
     parser.add_option("-b", "--backup",
-                      action="store_true", dest="do_backup", default=False,
+                      action="store_true",
+                      dest="do_backup",
+                      default=False,
                       help="make a backup before overwriting files")
+
     parser.add_option("-q", "--quiet",
-                      action="store_true", dest="quiet", default=False,
+                      action="store_true",
+                      dest="quiet",
+                      default=False,
                       help="quiet mode")
+
     parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose", default=False,
+                      action="store_true",
+                      dest="verbose",
+                      default=False,
                       help="verbose mode")
+
     parser.add_option("-s", "--dry-run",
-                      action="store_true", dest="dry_run", default=False,
+                      action="store_true",
+                      dest="dry_run",
+                      default=False,
                       help="simulation mode")
+
     parser.add_option("-R", "--recursive",
-                      action="store_true", dest="recurse", default=False,
+                      action="store_true",
+                      dest="recurse",
+                      default=False,
                       help="recurse into subdirectories")
+
     parser.add_option("-e", "--escape",
-                      action="store_true", dest="escapes", default=False,
+                      action="store_true",
+                      dest="escapes",
+                      default=False,
                       help="expand escapes in old_string and new_string")
+
     parser.add_option("-p", "--prompt",
-                      action="store_true", dest="prompt", default=False,
+                      action="store_true",
+                      dest="prompt",
+                      default=False,
                       help="prompt before modifying each file")
+
     parser.add_option("-f", "--force",
-                      action="store_true", dest="force", default=False,
+                      action="store_true",
+                      dest="force",
+                      default=False,
                       help="ignore errors when trying to preserve permissions")
+
     parser.add_option("-d", "--keep-times",
-                      action="store_true", dest="keep_times", default=False,
+                      action="store_true",
+                      dest="keep_times",
+                      default=False,
                       help="keep the modification times on modified files")
+
     parser.add_option("-t", "--use-tmpdir",
-                      action="store_true", dest="use_tmpdir", default=False,
+                      action="store_true",
+                      dest="use_tmpdir",
+                      default=False,
                       help="use $TMPDIR for storing temporary files")
+
     parser.add_option("-a", "--all",
-                      action="store_true", dest="hidden_files", default=False,
+                      action="store_true",
+                      dest="hidden_files",
+                      default=False,
                       help="do not ignore files and directories starting with .")
-    (opts, args) = parser.parse_args()
+
+    return parser
+
+
+def parse_cli_args():
+    """Parse command line arguments."""
+    parser = create_cli_args_parser()
+    opts, args = parser.parse_args()
 
     # args should now contain old_str, new_str and a list of files/dirs
     if len(args) < 3:
         parser.error("must have at least three arguments")
     if args[0] == "":
         parser.error("must have something to replace")
+
+    return opts, args
+
+
+def main():
+    opts, args = parse_cli_args()
 
     old_str = args[0]
     new_str = args[1]
@@ -165,13 +259,15 @@ def main():
 
     if new_str == "" and not opts.quiet:
         sys.stderr.write("Really DELETE all occurences of %s " % old_str)
+
         if opts.ignore_case:
             sys.stderr.write("(ignoring case)? (Y/[N]) ")
         else:
             sys.stderr.write("(case sensitive)? (Y/[N]) ")
+
         line = raw_input()
         if line != "" and line[0] in "nN":
-            sys.stderr.write("\nrpl:  User cancelled operation.\n")
+            sys.stderr.write("\nrpl: User cancelled operation.\n")
             sys.exit(os.EX_TEMPFAIL)
 
     # Tell the user what is going to happen
@@ -180,27 +276,39 @@ def main():
                          % (old_str, new_str))
     else:
         sys.stderr.write("Replacing \"%s\" with \"%s\" " % (old_str, new_str))
-    if opts.ignore_case: sys.stderr.write("(ignoring case) ")
-    else:                sys.stderr.write("(case sensitive) ")
-    if opts.whole_words: sys.stderr.write("(whole words only)\n")
-    else:                sys.stderr.write("(partial words matched)\n")
+
+    if opts.ignore_case:
+        sys.stderr.write("(ignoring case) ")
+    else:
+        sys.stderr.write("(case sensitive) ")
+
+    if opts.whole_words:
+        sys.stderr.write("(whole words only)\n")
+    else:
+        sys.stderr.write("(partial words matched)\n")
+
     if opts.dry_run and not opts.quiet:
         sys.stderr.write("The files listed below would be modified in a replace operation.\n")
 
     if opts.escapes:
         old_str = unescape(old_str)
         new_str = unescape(new_str)
+
     if opts.whole_words:
         regex = re.compile(r"(?:(?<=\s)|^)" + re.escape(old_str) + r"(?=\s|$)",
                            opts.ignore_case and re.I or 0)
     else:
         regex = re.compile(re.escape(old_str), opts.ignore_case and re.I or 0)
 
+    total_files = 0
     total_matches = 0
     files = get_files(files, opts.recurse, opts.suffixen, opts.verbose, opts.hidden_files)
     for filename, perms in files:
+        total_files += 1
+
         # Open the input file
-        try: f = open(filename, "rb")
+        try:
+            f = open(filename, "rb")
         except IOError as e:
             sys.stderr.write("\nrpl: Unable to open %s for reading." % fn)
             sys.stderr.write("\nrpl: Error: %s" % e)
@@ -208,8 +316,10 @@ def main():
             continue
 
         # Find out where we should put the temporary file
-        if opts.use_tmpdir: tempfile.tempdir = None
-        else:               tempfile.tempdir = os.path.dirname(filename)
+        if opts.use_tmpdir:
+            tempfile.tempdir = None
+        else:
+            tempfile.tempdir = os.path.dirname(filename)
 
         # Create the output file
         try:
@@ -257,31 +367,39 @@ def main():
                 fn = os.path.realpath(filename)
             except OSError as e:
                 fn = filename
-            if not opts.quiet: sys.stderr.write("  %s\n" % fn)
+
+            if not opts.quiet:
+                sys.stderr.write("  %s\n" % fn)
+
             os.unlink(tmp_path)
             total_matches += matches
             continue
 
         if opts.prompt:
-            sys.stderr.write("\nSave '%s' ? ([Y]/N) " % filename)
+            sys.stderr.write("\nSave '%s'? ([Y]/N) " % filename)
+
             line = ""
             while line == "" or line[0] not in "Yy\nnN":
                 line = raw_input()
+
             if line[0] in "nN":
-                sys.stderr.write("Not Saved.\n")
+                sys.stderr.write("Not saved.\n")
                 os.unlink(tmp_path)
                 continue
+
             sys.stderr.write("Saved.\n")
 
         if opts.do_backup:
-            try: os.rename(filename, filename + "~")
+            try:
+                os.rename(filename, filename + "~")
             except OSError as e:
                 sys.stderr.write("rpl: An error occured renaming %s to %s." % (filename, filename + "~"))
                 sys.stderr.write("\nrpl: Error: %s" % e)
                 continue
 
         # Rename the file
-        try: os.rename(tmp_path, filename)
+        try:
+            os.rename(tmp_path, filename)
         except OSError as e:
             sys.stderr.write("rpl: An error occured replacing %s with %s." % (tmp_path, filename))
             sys.stderr.write("\nrpl: Error: %s" % e)
@@ -290,25 +408,28 @@ def main():
 
         # Restore the times
         if opts.keep_times:
-            try: os.utime(filename, (perms.st_atime, perms.st_mtime))
+            try:
+                os.utime(filename, (perms.st_atime, perms.st_mtime))
             except OSError as e:
                 sys.stderr.write("\nrpl: An error occured setting the access time and mod time of the file %s.", filename)
                 sys.stderr.write("\nrpl: Error: %s" % e)
+
         total_matches += matches
 
     # We're about to exit, give a summary
     if not opts.quiet:
         if opts.dry_run:
-            sys.stderr.write("\nA Total of %lu matches found in %lu file%s searched."
+            sys.stderr.write("\nA total of %lu matches found in %lu file%s searched."
                              % (total_matches,
-                                len(files),
-                                len(files) != 1 and "s" or ""))
+                                total_files,
+                                total_files != 1 and "s" or ""))
             sys.stderr.write("\nNone replaced (simulation mode).\n")
         else:
-            sys.stderr.write("\nA Total of %lu matches replaced in %lu file%s searched.\n"
+            sys.stderr.write("\nA total of %lu matches replaced in %lu file%s searched.\n"
                              % (total_matches,
-                                len(files),
-                                len(files) != 1 and "s" or ""))
+                                total_files,
+                                total_files != 1 and "s" or ""))
+
 
 if __name__ == "__main__":
     main()
