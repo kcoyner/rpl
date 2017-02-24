@@ -5,6 +5,12 @@ try: import readline
 except ImportError: pass
 from stat import *
 
+try:
+    raw_input
+except NameError:
+    # Python 3.x
+    raw_input = input
+
 def show_license(*eat):
     print ("""rpl - replace strings in files
 Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
