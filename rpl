@@ -97,7 +97,7 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
         if sys.version_info < (3,):
             parts = after.join(parts)
         else:
-            parts = (after.join(parts)).encode(encoding=encoding, errors='ignore')
+            parts = after.join(parts).encode(encoding=encoding, errors='ignore')
         outstream.write(parts)
     if sys.version_info < (3,):
         outstream.write(tonext)
