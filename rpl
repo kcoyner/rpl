@@ -108,11 +108,11 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
             tonext = u''
 
         if is_python_before_3():
-            parts = after.join(parts)
+            joined_parts = after.join(parts)
         else:
-            parts = after.join(parts).encode(encoding=encoding, errors='ignore')
+            joined_parts = after.join(parts).encode(encoding=encoding, errors='ignore')
 
-        outstream.write(parts)
+        outstream.write(joined_parts)
 
     if is_python_before_3():
         outstream.write(tonext)
