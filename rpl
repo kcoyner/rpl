@@ -91,6 +91,33 @@ def unescape(s):
     regex = re.compile(r'\\([0-7]{1,3}|x[0-9a-fA-F]{2}|[nrtvafb\\])')
     return regex.sub(lambda match: eval('"%s"' % match.group()), s)
 
+def casetype(string):
+    # Starts with lower case
+    case = 0
+
+    # Capitalized?
+    if len(string) >= 1 and string[0].isupper():
+        case = 1
+
+        # All upper case?
+        all_upper = True
+        for i in range(1, len(string)):
+            if not string[i].isupper():
+                all_upper = False
+                break
+        if all_upper:
+            case = 2
+
+    return case
+
+def caselike(model, string):
+    if len(string) > 0:
+        case = casetype(model)
+        if case == 1:
+            string = string[0].upper() + string[1:]
+        elif case == 2:
+            string = string.upper()
+    return string
 
 def blockrepl(instream, outstream, regex, before, after, blocksize=None):
     encoding = locale.getdefaultlocale()[1]
@@ -111,7 +138,7 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
 
         block = block.decode(encoding='utf-8', errors='ignore')
         parts = regex.split(tonext + block)
-        sum += len(parts) - 1
+        sum += len(parts) // 2
         lastpart = parts[-1]
         if lastpart:
             tonext = lastpart[-patlen:]
@@ -119,7 +146,14 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
         else:
             tonext = u''
 
-        joined_parts = after.join(parts)
+        for i in range(1, len(parts), 2):
+            if parts[i] != '':
+                replace = after
+                if regex.flags & re.I != 0:
+                    replace = caselike(parts[i], after)
+                parts[i] = replace
+
+        joined_parts = ''.join(parts)
         joined_parts = encode_if_necessary(joined_parts, encoding)
         outstream.write(joined_parts)
 
@@ -304,11 +338,10 @@ def main():
         old_str = unescape(old_str)
         new_str = unescape(new_str)
 
+    regex_str = re.escape(old_str)
     if opts.whole_words:
-        regex = re.compile(r"(?:(?<=\s)|^)" + re.escape(old_str) + r"(?=\s|$)",
-                           opts.ignore_case and re.I or 0)
-    else:
-        regex = re.compile(re.escape(old_str), opts.ignore_case and re.I or 0)
+        regex_str = r"(?:(?<=\s)|^)" + regex_str + r"(?=\s|$)"
+    regex = re.compile(r"(" + regex_str + r")", opts.ignore_case and re.I or 0)
 
     total_files = 0
     total_matches = 0
