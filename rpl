@@ -21,6 +21,8 @@ def show_license(*eat):
 Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
 Copyright (C) 2004 Christian Haggstrom <chm@c00.info>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
+Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
+Copyright (C) 2018-2019 Reuben Thomas <rrt@sc3d.org>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
