@@ -326,8 +326,8 @@ def main():
 
     regex_str = re.escape(old_str)
     if opts.whole_words:
-        regex_str = r"(?:(?<=\s)|^)" + regex_str + r"(?=\s|$)"
-    regex = re.compile(r"(" + regex_str + r")", opts.ignore_case and re.I or 0)
+        regex_str = r"\b" + regex_str + r"\b"
+    regex = re.compile(r"(" + regex_str + r")", re.I if opts.ignore_case else 0)
 
     total_files = 0
     total_matches = 0
