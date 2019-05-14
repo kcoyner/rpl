@@ -246,12 +246,6 @@ def create_cli_args_parser():
                       default=False,
                       help="keep the modification times on modified files")
 
-    parser.add_option("-t", "--use-tmpdir",
-                      action="store_true",
-                      dest="use_tmpdir",
-                      default=False,
-                      help="use $TMPDIR for storing temporary files")
-
     parser.add_option("-a", "--all",
                       action="store_true",
                       dest="hidden_files",
@@ -332,12 +326,6 @@ def main():
         except IOError as e:
             warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
             continue
-
-        # Find out where we should put the temporary file
-        if opts.use_tmpdir:
-            tempfile.tempdir = None
-        else:
-            tempfile.tempdir = os.path.dirname(filename)
 
         # Create the output file
         try:
