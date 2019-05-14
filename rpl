@@ -41,43 +41,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
     sys.exit(0)
 
 
+def warn(message):
+    print("\nrpl: {}".format(message), file=sys.stderr)
+
 def get_files(filenames, recurse, suffixen, verbose, hidden_files):
     """Yield (filename, permissions) pairs."""
     for filename in filenames:
         try:
             perms = os.lstat(filename)
         except OSError as e:
-            sys.stderr.write("\nrpl: Unable to read permissions of %s." % filename)
-            sys.stderr.write("\nrpl: Error: %s" % e)
-            sys.stderr.write("\nrpl: SKIPPING %s\n\n" % filename)
+            warn("SKIPPING {}: unable to read permissions; error: {}".format(filename, e))
             continue
 
         if S_ISDIR(perms.st_mode):
             if recurse:
                 if verbose:
-                    sys.stderr.write("Scanning directory: %s\n" % filename)
+                    warn("Scanning directory: {}".format(filename))
 
                 for f in os.listdir(filename):
                     if not hidden_files and f.startswith('.'):
                         if verbose:
-                            sys.stderr.write("Skipping: %s (hidden)\n"
-                                             % os.path.join(filename, f))
+                            warn("SKIPPING: {} (hidden)".format(
+                                os.path.join(filename, f))
+                            )
                         continue
 
                     yield from get_files([os.path.join(filename, f)],
                                          recurse, suffixen, verbose, hidden_files)
             else:
                 if verbose:
-                    sys.stderr.write("Directory: %s skipped.\n" % filename)
+                    warn("SKIPPING directory {}".format(filename))
                 continue
         elif S_ISREG(perms.st_mode):
             if suffixen and not any(filename.endswith(s) for s in suffixen):
-                sys.stderr.write("Skipping: %s (suffix not in list)\n" % filename)
+                warn("SKIPPING: {} (suffix not in list)".format(filename))
                 continue
 
             yield filename, perms
         else:
-            sys.stderr.write("Skipping: %s (not a regular file)\n" % filename)
+            warn("SKIPPING: {} (not a regular file)".format(filename))
 
 
 def unescape(s):
@@ -115,7 +117,7 @@ def caselike(model, string):
 def blockrepl(instream, outstream, regex, before, after, blocksize=None):
     encoding = locale.getdefaultlocale()[1]
     if encoding is None:
-        sys.stderr.write("Could not determine default locale.")
+        warn("Could not determine default locale")
         sys.exit(os.EX_CONFIG)
 
     patlen = len(before)
@@ -283,41 +285,31 @@ def main():
     # See if all the files actually exist
     for file in files:
         if not os.path.exists(file):
-            sys.stderr.write("\nrpl: File \"%s\" not found.\n" % file)
+            warn("File \"{}\" not found".format(file))
             sys.exit(os.EX_DATAERR)
 
     if new_str == "" and not opts.quiet:
-        sys.stderr.write("Really DELETE all occurences of %s " % old_str)
-
-        if opts.ignore_case:
-            sys.stderr.write("(ignoring case)? (Y/[N]) ")
-        else:
-            sys.stderr.write("(case sensitive)? (Y/[N]) ")
+        print("Really DELETE all occurences of {} ({})? (Y/[N]) ".format(
+            old_str,
+            "ignoring case" if opts.ignore.case else "case sensitive"
+        ), file=sys.stderr, end='')
 
         line = input()
         if line != "" and line[0] in "nN":
-            sys.stderr.write("\nrpl: User cancelled operation.\n")
+            warn("User cancelled operation.")
             sys.exit(os.EX_TEMPFAIL)
 
     # Tell the user what is going to happen
-    if opts.dry_run:
-        sys.stderr.write("Simulating replacement of \"%s\" with \"%s\" "
-                         % (old_str, new_str))
-    else:
-        sys.stderr.write("Replacing \"%s\" with \"%s\" " % (old_str, new_str))
-
-    if opts.ignore_case:
-        sys.stderr.write("(ignoring case) ")
-    else:
-        sys.stderr.write("(case sensitive) ")
-
-    if opts.whole_words:
-        sys.stderr.write("(whole words only)\n")
-    else:
-        sys.stderr.write("(partial words matched)\n")
+    warn("{} \"{}\" with \"{}\" ({}; {})".format(
+        "Simulating replacement of" if opts.dry_run else "Replacing",
+        old_str,
+        new_str,
+        "ignoring case" if opts.ignore_case else "case sensitive",
+        "whole words only" if opts.whole_words else "partial words matched",
+    ))
 
     if opts.dry_run and not opts.quiet:
-        sys.stderr.write("The files listed below would be modified in a replace operation.\n")
+        warn("The files listed below would be modified in a replace operation")
 
     if opts.escapes:
         old_str = unescape(old_str)
@@ -338,9 +330,7 @@ def main():
         try:
             f = open(filename, "rb")
         except IOError as e:
-            sys.stderr.write("\nrpl: Unable to open %s for reading." % fn)
-            sys.stderr.write("\nrpl: Error: %s" % e)
-            sys.stderr.write("\nrpl: SKIPPING %s\n\n" % fn)
+            warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
             continue
 
         # Find out where we should put the temporary file
@@ -354,10 +344,7 @@ def main():
             o, tmp_path = tempfile.mkstemp("", ".tmp.")
             o = os.fdopen(o, "wb")
         except OSError as e:
-            sys.stderr.write("\nrpl: Unable to create temp file.")
-            sys.stderr.write("\nrpl: Error: %s" % e)
-            sys.stderr.write("\nrpl: (Type \"rpl -h\" and consider \"-t\" to specify temp file location.)")
-            sys.stderr.write("\nrpl: SKIPPING %s\n\n" % filename)
+            warn("SKIPPING {}: cannot create temp file; error: {}".format(filename, e))
             continue
 
         # Set permissions and owner
@@ -365,20 +352,18 @@ def main():
             os.chown(tmp_path, perms.st_uid, perms.st_gid)
             os.chmod(tmp_path, perms.st_mode)
         except OSError as e:
-            sys.stderr.write("\nrpl: Unable to set owner/group/perms of %s" % filename)
-            sys.stderr.write("\nrpl: Error: %s" % e)
+            warn("Unable to set owner/group/perms of {}; error: {}".format(filename, e))
             if opts.force:
-                sys.stderr.write("\nrpl: WARNING: New owner/group/perms may not match!\n\n")
+                warn("WARNING: New owner/group/perms may not match!\n")
             else:
-                sys.stderr.write("\nrpl: SKIPPING %s!\n\n" % filename)
+                warn("SKIPPING {}!\n".format(filename))
                 os.unlink(tmp_path)
                 continue
 
         if opts.verbose and not opts.dry_run:
-            sys.stderr.write("Processing:  %s\n" % filename)
+            warn("Processing: {}"(filename))
         elif not opts.quiet and not opts.dry_run:
-            sys.stderr.write(".")
-            sys.stderr.flush()
+            print(".", file=sys.stderr, flush=True, end='')
 
         # Do the actual work now
         matches = blockrepl(f, o, regex, old_str, new_str, 1024)
@@ -397,40 +382,38 @@ def main():
                 fn = filename
 
             if not opts.quiet:
-                sys.stderr.write("  %s\n" % fn)
+                print("  {}".format(fn), file=sys.stderr)
 
             os.unlink(tmp_path)
             total_matches += matches
             continue
 
         if opts.prompt:
-            sys.stderr.write("\nSave '%s'? ([Y]/N) " % filename)
+            print("\nSave \"{}\"? ([Y]/N) ".format(filename), file=sys.stderr, end='')
 
             line = ""
             while line == "" or line[0] not in "Yy\nnN":
                 line = input()
 
             if line[0] in "nN":
-                sys.stderr.write("Not saved.\n")
+                print("Not saved", file=sys.stderr)
                 os.unlink(tmp_path)
                 continue
 
-            sys.stderr.write("Saved.\n")
+            print("Saved", file=sys.stderr)
 
         if opts.do_backup:
             try:
                 os.rename(filename, filename + "~")
             except OSError as e:
-                sys.stderr.write("rpl: An error occured renaming %s to %s." % (filename, filename + "~"))
-                sys.stderr.write("\nrpl: Error: %s" % e)
+                warn("Error renaming {} to {}:".format(filename, filename + "~", e))
                 continue
 
         # Rename the file
         try:
             os.rename(tmp_path, filename)
         except OSError as e:
-            sys.stderr.write("rpl: An error occured replacing %s with %s." % (tmp_path, filename))
-            sys.stderr.write("\nrpl: Error: %s" % e)
+            warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
             os.unlink(tmp_path)
             continue
 
@@ -439,24 +422,20 @@ def main():
             try:
                 os.utime(filename, (perms.st_atime, perms.st_mtime))
             except OSError as e:
-                sys.stderr.write("\nrpl: An error occured setting the access time and mod time of the file %s.", filename)
-                sys.stderr.write("\nrpl: Error: %s" % e)
+                warn("Error setting timestamps of {}: {}".format(filename, e))
 
         total_matches += matches
 
     # We're about to exit, give a summary
     if not opts.quiet:
+        warn("A total of {} matches {} in {} file{} searched".format(
+            total_matches,
+            "found" if opts.dry_run else "replaced",
+            total_files,
+            "s" if total_files != 1 else "",
+        ))
         if opts.dry_run:
-            sys.stderr.write("\nA total of %lu matches found in %lu file%s searched."
-                             % (total_matches,
-                                total_files,
-                                total_files != 1 and "s" or ""))
-            sys.stderr.write("\nNone replaced (simulation mode).\n")
-        else:
-            sys.stderr.write("\nA total of %lu matches replaced in %lu file%s searched.\n"
-                             % (total_matches,
-                                total_files,
-                                total_files != 1 and "s" or ""))
+            warn("None replaced (simulation mode)")
 
 
 if __name__ == "__main__":
