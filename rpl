@@ -64,11 +64,8 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
                                              % os.path.join(filename, f))
                         continue
 
-                    subdir_files = get_files([os.path.join(filename, f)],
-                                             recurse, suffixen, verbose, hidden_files)
-
-                    for subdir_file in subdir_files:
-                        yield subdir_file
+                    yield from get_files([os.path.join(filename, f)],
+                                         recurse, suffixen, verbose, hidden_files)
             else:
                 if verbose:
                     sys.stderr.write("Directory: %s skipped.\n" % filename)
