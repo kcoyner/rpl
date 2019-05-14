@@ -24,7 +24,6 @@ setup(name='rpl',
       scripts=['rpl'],
       classifiers=[
           'Environment :: Console',
-          'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
       ],
      )

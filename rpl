@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import locale
 import optparse
@@ -15,12 +15,6 @@ import tempfile
 
 VERSION = "1.5.8"
 
-
-try:
-    raw_input
-except NameError:
-    # Python 3.x
-    raw_input = input
 
 def show_license(*eat):
     print("""rpl - replace strings in files
@@ -154,26 +148,18 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
                 parts[i] = replace
 
         joined_parts = ''.join(parts)
-        joined_parts = encode_if_necessary(joined_parts, encoding)
+        joined_parts = encode(joined_parts, encoding)
         outstream.write(joined_parts)
 
-    tonext = encode_if_necessary(tonext, encoding)
+    tonext = encode(tonext, encoding)
     outstream.write(tonext)
 
     return sum
 
 
-def encode_if_necessary(s, encoding):
-    """Encode string as of Python 3.x."""
-    if is_python_before_3():
-        return s
-    else:
-        return s.encode(encoding=encoding, errors='ignore')
-
-
-def is_python_before_3():
-    """Return `True` if Python's version is below 3.x."""
-    return sys.version_info < (3,)
+def encode(s, encoding):
+    """Encode string ignoring errors."""
+    return s.encode(encoding=encoding, errors='ignore')
 
 
 def create_cli_args_parser():
@@ -309,7 +295,7 @@ def main():
         else:
             sys.stderr.write("(case sensitive)? (Y/[N]) ")
 
-        line = raw_input()
+        line = input()
         if line != "" and line[0] in "nN":
             sys.stderr.write("\nrpl: User cancelled operation.\n")
             sys.exit(os.EX_TEMPFAIL)
@@ -423,7 +409,7 @@ def main():
 
             line = ""
             while line == "" or line[0] not in "Yy\nnN":
-                line = raw_input()
+                line = input()
 
             if line[0] in "nN":
                 sys.stderr.write("Not saved.\n")
