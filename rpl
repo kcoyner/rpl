@@ -330,7 +330,7 @@ def main():
                 continue
 
         if opts.verbose and not opts.dry_run:
-            warn("Processing: {}"(filename))
+            warn("Processing: {}".format(filename))
         elif not opts.quiet and not opts.dry_run:
             print(".", file=sys.stderr, flush=True, end='')
 
