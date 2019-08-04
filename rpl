@@ -79,7 +79,7 @@ def chain_streams(streams, buffer_size=io.DEFAULT_BUFFER_SIZE):
 def warn(message):
     print("\nrpl: {}".format(message), file=sys.stderr)
 
-def get_files(filenames, recurse, verbose, hidden_files):
+def get_files(filenames, verbose, hidden_files):
     """Yield (filename, permissions) pairs."""
     for filename in filenames:
         try:
@@ -89,24 +89,9 @@ def get_files(filenames, recurse, verbose, hidden_files):
             continue
 
         if S_ISDIR(perms.st_mode):
-            if recurse:
-                if verbose:
-                    warn("Scanning directory: {}".format(filename))
-
-                for f in os.listdir(filename):
-                    if not hidden_files and f.startswith('.'):
-                        if verbose:
-                            warn("SKIPPING: {} (hidden)".format(
-                                os.path.join(filename, f))
-                            )
-                        continue
-
-                    yield from get_files([os.path.join(filename, f)],
-                                         recurse, verbose, hidden_files)
-            else:
-                if verbose:
-                    warn("SKIPPING directory {}".format(filename))
-                continue
+            if verbose:
+                warn("SKIPPING directory {}".format(filename))
+            continue
         elif S_ISREG(perms.st_mode):
             yield filename, perms
         else:
@@ -222,10 +207,6 @@ parser.add_argument("-s", "--dry-run",
                     action="store_true",
                     help="simulation mode")
 
-parser.add_argument("-R", "--recursive",
-                    action="store_true",
-                    help="recurse into subdirectories")
-
 parser.add_argument("-e", "--escape",
                     action="store_true",
                     help="expand escapes in old_string and new_string")
@@ -299,7 +280,7 @@ regex = re.compile(r"(" + regex_str + r")", re.I if args.ignore_case else 0)
 
 total_files = 0
 total_matches = 0
-files = get_files(files, args.recursive, args.verbose, args.hidden_files)
+files = get_files(files, args.verbose, args.hidden_files)
 for filename, perms in files:
     total_files += 1
 
