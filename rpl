@@ -79,7 +79,7 @@ def chain_streams(streams, buffer_size=io.DEFAULT_BUFFER_SIZE):
 def warn(message):
     print("\nrpl: {}".format(message), file=sys.stderr)
 
-def get_files(filenames, recurse, suffixen, verbose, hidden_files):
+def get_files(filenames, recurse, verbose, hidden_files):
     """Yield (filename, permissions) pairs."""
     for filename in filenames:
         try:
@@ -102,16 +102,12 @@ def get_files(filenames, recurse, suffixen, verbose, hidden_files):
                         continue
 
                     yield from get_files([os.path.join(filename, f)],
-                                         recurse, suffixen, verbose, hidden_files)
+                                         recurse, verbose, hidden_files)
             else:
                 if verbose:
                     warn("SKIPPING directory {}".format(filename))
                 continue
         elif S_ISREG(perms.st_mode):
-            if suffixen and not any(filename.endswith(s) for s in suffixen):
-                warn("SKIPPING: {} (suffix not in list)".format(filename))
-                continue
-
             yield filename, perms
         else:
             warn("SKIPPING: {} (not a regular file)".format(filename))
@@ -204,12 +200,6 @@ For more information about these matters, see the file named COPYING.''')
                       dest="encoding",
                       default=None,
                       help="specify character set encoding")
-    parser.add_option("-x",
-                      metavar="SUFFIX",
-                      action="append",
-                      dest="suffixen",
-                      default=[],
-                      help="specify file suffix to match")
 
     parser.add_option("-i", "--ignore-case",
                       action="store_true",
@@ -352,7 +342,7 @@ def main():
 
     total_files = 0
     total_matches = 0
-    files = get_files(files, opts.recurse, opts.suffixen, opts.verbose, opts.hidden_files)
+    files = get_files(files, opts.recurse, opts.verbose, opts.hidden_files)
     for filename, perms in files:
         total_files += 1
 
