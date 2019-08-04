@@ -115,11 +115,6 @@ def caselike(model, string):
     return string
 
 def blockrepl(instream, outstream, regex, before, after, blocksize=None):
-    encoding = locale.getdefaultlocale()[1]
-    if encoding is None:
-        warn("Could not determine default locale")
-        sys.exit(os.EX_CONFIG)
-
     patlen = len(before)
     sum = 0
     if not blocksize:
@@ -131,7 +126,6 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
         if not block:
             break
 
-        block = block.decode(encoding='utf-8', errors='ignore')
         parts = regex.split(tonext + block)
         sum += len(parts) // 2
         lastpart = parts[-1]
@@ -149,18 +143,11 @@ def blockrepl(instream, outstream, regex, before, after, blocksize=None):
                 parts[i] = replace
 
         joined_parts = ''.join(parts)
-        joined_parts = encode(joined_parts, encoding)
         outstream.write(joined_parts)
 
-    tonext = encode(tonext, encoding)
     outstream.write(tonext)
 
     return sum
-
-
-def encode(s, encoding):
-    """Encode string ignoring errors."""
-    return s.encode(encoding=encoding, errors='ignore')
 
 
 def create_cli_args_parser():
@@ -270,6 +257,11 @@ def parse_cli_args():
 
 
 def main():
+    encoding = locale.getdefaultlocale()[1]
+    if encoding is None:
+        warn("Could not determine default locale")
+        sys.exit(os.EX_CONFIG)
+
     opts, args = parse_cli_args()
 
     old_str = args[0]
@@ -322,7 +314,7 @@ def main():
 
         # Open the input file
         try:
-            f = open(filename, "rb")
+            f = open(filename, encoding=encoding)
         except IOError as e:
             warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
             continue
@@ -330,7 +322,7 @@ def main():
         # Create the output file
         try:
             o, tmp_path = tempfile.mkstemp("", ".tmp.")
-            o = os.fdopen(o, "wb")
+            o = os.fdopen(o, "w", encoding=encoding)
         except OSError as e:
             warn("SKIPPING {}: cannot create temp file; error: {}".format(filename, e))
             continue
