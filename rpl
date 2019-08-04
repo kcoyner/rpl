@@ -3,6 +3,7 @@
 import locale
 import optparse
 import os
+import io
 import re
 try:
     import readline
@@ -114,15 +115,13 @@ def caselike(model, string):
             string = string.upper()
     return string
 
-def blockrepl(instream, outstream, regex, before, after, blocksize=None):
+def blockrepl(instream, outstream, regex, before, after):
     patlen = len(before)
     sum = 0
-    if not blocksize:
-        blocksize = 2 * patlen
     tonext = u''
 
     while 1:
-        block = instream.read(blocksize)
+        block = instream.read(io.DEFAULT_BUFFER_SIZE)
         if not block:
             break
 
@@ -346,7 +345,7 @@ def main():
             print(".", file=sys.stderr, flush=True, end='')
 
         # Do the actual work now
-        matches = blockrepl(f, o, regex, old_str, new_str, 1024)
+        matches = blockrepl(f, o, regex, old_str, new_str)
 
         f.close()
         o.close()
