@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import locale
-import optparse
+import argparse
 import os
 import io
 import re
@@ -180,10 +180,10 @@ def replace(instream, outstream, regex, before, after, encoding):
     return sum
 
 
-def create_cli_args_parser():
-    """Create command line argument parser."""
-    usage = "usage: %prog [options] old_string new_string target_file(s)"
-    parser = optparse.OptionParser(usage, version="%prog " + VERSION + '''
+# Create command line argument parser.
+parser = argparse.ArgumentParser(description="usage: %prog [options] old_string new_string target_file(s)")
+parser.add_argument('--version', action='version',
+                    version="%prog " + VERSION + '''
 Copyright (C) 2004-2005 Göran Weinholt <weinholt@debian.org>
 Copyright (C) 2004 Christian Häggström <chm@c00.info>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
@@ -195,283 +195,236 @@ You may redistribute copies of rpl under the terms of the
 GNU General Public License.
 For more information about these matters, see the file named COPYING.''')
 
-    parser.add_option("--encoding",
-                      action="store",
-                      dest="encoding",
-                      default=None,
-                      help="specify character set encoding")
+parser.add_argument("--encoding", metavar="ENCODING",
+                    help="specify character set encoding")
 
-    parser.add_option("-i", "--ignore-case",
-                      action="store_true",
-                      dest="ignore_case",
-                      default=False,
-                      help="do a case insensitive match")
+parser.add_argument("-i", "--ignore-case",
+                    action="store_true",
+                    help="match case-insensitively")
 
-    parser.add_option("-w", "--whole-words",
-                      action="store_true",
-                      dest="whole_words",
-                      default=False,
-                      help="whole words (old_string matches on word boundaries only)")
+parser.add_argument("-w", "--whole-words",
+                    action="store_true",
+                    help="whole words (old_string matches on word boundaries only)")
 
-    parser.add_option("-b", "--backup",
-                      action="store_true",
-                      dest="do_backup",
-                      default=False,
-                      help="rename original file to file~ before replacing")
+parser.add_argument("-b", "--backup",
+                    action="store_true",
+                    help="rename original file to file~ before replacing")
 
-    parser.add_option("-q", "--quiet",
-                      action="store_true",
-                      dest="quiet",
-                      default=False,
-                      help="quiet mode")
+parser.add_argument("-q", "--quiet",
+                    action="store_true",
+                    help="quiet mode")
 
-    parser.add_option("-v", "--verbose",
-                      action="store_true",
-                      dest="verbose",
-                      default=False,
-                      help="verbose mode")
+parser.add_argument("-v", "--verbose",
+                    action="store_true",
+                    help="verbose mode")
 
-    parser.add_option("-s", "--dry-run",
-                      action="store_true",
-                      dest="dry_run",
-                      default=False,
-                      help="simulation mode")
+parser.add_argument("-s", "--dry-run",
+                    action="store_true",
+                    help="simulation mode")
 
-    parser.add_option("-R", "--recursive",
-                      action="store_true",
-                      dest="recurse",
-                      default=False,
-                      help="recurse into subdirectories")
+parser.add_argument("-R", "--recursive",
+                    action="store_true",
+                    help="recurse into subdirectories")
 
-    parser.add_option("-e", "--escape",
-                      action="store_true",
-                      dest="escapes",
-                      default=False,
-                      help="expand escapes in old_string and new_string")
+parser.add_argument("-e", "--escape",
+                    action="store_true",
+                    help="expand escapes in old_string and new_string")
 
-    parser.add_option("-p", "--prompt",
-                      action="store_true",
-                      dest="prompt",
-                      default=False,
-                      help="prompt before modifying each file")
+parser.add_argument("-p", "--prompt",
+                    action="store_true",
+                    help="prompt before modifying each file")
 
-    parser.add_option("-f", "--force",
-                      action="store_true",
-                      dest="force",
-                      default=False,
-                      help="ignore errors when trying to preserve permissions")
+parser.add_argument("-f", "--force",
+                    action="store_true",
+                    help="ignore errors when trying to preserve permissions")
 
-    parser.add_option("-d", "--keep-times",
-                      action="store_true",
-                      dest="keep_times",
-                      default=False,
-                      help="keep the modification times on modified files")
+parser.add_argument("-d", "--keep-times",
+                    action="store_true",
+                    help="keep the modification times on modified files")
 
-    parser.add_option("-a", "--all",
-                      action="store_true",
-                      dest="hidden_files",
-                      default=False,
-                      help="process hidden files and directories (starting with a period)")
+parser.add_argument("-a", "--hidden-files",
+                    action="store_true",
+                    help="process hidden files and directories (starting with a period)")
 
-    return parser
+parser.add_argument('old_str', metavar='OLD-TEXT')
+parser.add_argument('new_str', metavar='NEW-TEXT')
+parser.add_argument('file', metavar='FILE', nargs='+')
 
+args = parser.parse_args()
 
-def parse_cli_args():
-    """Parse command line arguments."""
-    parser = create_cli_args_parser()
-    opts, args = parser.parse_args()
+# See if all the files actually exist
+files = args.file
+for file in files:
+    if not os.path.exists(file):
+        warn("File \"{}\" not found".format(file))
+        sys.exit(os.EX_DATAERR)
 
-    # args should now contain old_str, new_str and a list of files/dirs
-    if len(args) < 3:
-        parser.error("must have at least three arguments")
-    if args[0] == "":
-        parser.error("must have something to replace")
-
-    return opts, args
-
-
-def main():
-    global opts
-    opts, args = parse_cli_args()
-
-    old_str = args[0]
-    new_str = args[1]
-    files = args[2:]
-
-    # See if all the files actually exist
-    for file in files:
-        if not os.path.exists(file):
-            warn("File \"{}\" not found".format(file))
-            sys.exit(os.EX_DATAERR)
-
-    if new_str == "" and not opts.quiet:
-        print("Really DELETE all occurrences of {} ({})? (Y/[N]) ".format(
-            old_str,
-            "ignoring case" if opts.ignore.case else "case sensitive"
-        ), file=sys.stderr, end='')
-
-        line = input()
-        if line != "" and line[0] in "nN":
-            warn("User cancelled operation.")
-            sys.exit(os.EX_TEMPFAIL)
-
-    # Tell the user what is going to happen
-    warn("{} \"{}\" with \"{}\" ({}; {})".format(
-        "Simulating replacement of" if opts.dry_run else "Replacing",
+old_str = args.old_str
+new_str = args.new_str
+if new_str == "" and not args.quiet:
+    print("Really DELETE all occurrences of {} ({})? (Y/[N]) ".format(
         old_str,
-        new_str,
-        "ignoring case" if opts.ignore_case else "case sensitive",
-        "whole words only" if opts.whole_words else "partial words matched",
-    ))
+        "ignoring case" if args.ignore.case else "case sensitive"
+    ), file=sys.stderr, end='')
 
-    if opts.dry_run and not opts.quiet:
-        warn("The files listed below would be modified in a replace operation")
+    line = input()
+    if line != "" and line[0] in "nN":
+        warn("User cancelled operation.")
+        sys.exit(os.EX_TEMPFAIL)
 
-    encoding = None
-    if opts.encoding:
-        encoding = opts.encoding
+# Tell the user what is going to happen
+warn("{} \"{}\" with \"{}\" ({}; {})".format(
+    "Simulating replacement of" if args.dry_run else "Replacing",
+    old_str,
+    new_str,
+    "ignoring case" if args.ignore_case else "case sensitive",
+    "whole words only" if args.whole_words else "partial words matched",
+))
 
-    if opts.escapes:
-        old_str = unescape(old_str)
-        new_str = unescape(new_str)
+if args.dry_run and not args.quiet:
+    warn("The files listed below would be modified in a replace operation")
 
-    regex_str = re.escape(old_str)
-    if opts.whole_words:
-        regex_str = r"\b" + regex_str + r"\b"
-    regex = re.compile(r"(" + regex_str + r")", re.I if opts.ignore_case else 0)
+encoding = None
+if args.encoding:
+    encoding = args.encoding
 
-    total_files = 0
-    total_matches = 0
-    files = get_files(files, opts.recurse, opts.verbose, opts.hidden_files)
-    for filename, perms in files:
-        total_files += 1
+if args.escape:
+    old_str = unescape(old_str)
+    new_str = unescape(new_str)
 
-        # Open the input file
-        try:
-            f = open(filename, "rb")
-        except IOError as e:
-            warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
+regex_str = re.escape(old_str)
+if args.whole_words:
+    regex_str = r"\b" + regex_str + r"\b"
+regex = re.compile(r"(" + regex_str + r")", re.I if args.ignore_case else 0)
+
+total_files = 0
+total_matches = 0
+files = get_files(files, args.recursive, args.verbose, args.hidden_files)
+for filename, perms in files:
+    total_files += 1
+
+    # Open the input file
+    try:
+        f = open(filename, "rb")
+    except IOError as e:
+        warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
+        continue
+
+    # Create the output file
+    try:
+        o, tmp_path = tempfile.mkstemp("", ".tmp.")
+        o = os.fdopen(o, "wb")
+    except OSError as e:
+        warn("SKIPPING {}: cannot create temp file; error: {}".format(filename, e))
+        continue
+
+    # Set permissions and owner
+    try:
+        os.chown(tmp_path, perms.st_uid, perms.st_gid)
+        os.chmod(tmp_path, perms.st_mode)
+    except OSError as e:
+        warn("Unable to set owner/group/perms of {}; error: {}".format(filename, e))
+        if args.force:
+            warn("WARNING: New owner/group/perms may not match!\n")
+        else:
+            warn("SKIPPING {}!\n".format(filename))
+            os.unlink(tmp_path)
             continue
 
-        # Create the output file
-        try:
-            o, tmp_path = tempfile.mkstemp("", ".tmp.")
-            o = os.fdopen(o, "wb")
-        except OSError as e:
-            warn("SKIPPING {}: cannot create temp file; error: {}".format(filename, e))
-            continue
+    if args.verbose and not args.dry_run:
+        warn("Processing: {}".format(filename))
+    elif not args.quiet and not args.dry_run:
+        print(".", file=sys.stderr, flush=True, end='')
 
-        # Set permissions and owner
-        try:
-            os.chown(tmp_path, perms.st_uid, perms.st_gid)
-            os.chmod(tmp_path, perms.st_mode)
-        except OSError as e:
-            warn("Unable to set owner/group/perms of {}; error: {}".format(filename, e))
-            if opts.force:
-                warn("WARNING: New owner/group/perms may not match!\n")
+    # If we don't have an explicit encoding, guess
+    block = b''
+    if encoding is None:
+        detector = UniversalDetector()
+        while True:
+            next_block = f.read(io.DEFAULT_BUFFER_SIZE)
+            if len(next_block) == 0: break
+            block += next_block
+            detector.feed(next_block)
+            if detector.done: break
+        f = chain_streams([io.BytesIO(block), f])
+
+        detector.close()
+        if detector.done:
+            encoding = detector.result['encoding']
+            if args.verbose:
+                warn("guessed encoding '{}'".format(encoding))
             else:
-                warn("SKIPPING {}!\n".format(filename))
-                os.unlink(tmp_path)
-                continue
+                encoding = locale.getpreferredencoding(False)
+                warn("could not guess encoding; using locale default '{}'".format(encoding))
 
-        if opts.verbose and not opts.dry_run:
-            warn("Processing: {}".format(filename))
-        elif not opts.quiet and not opts.dry_run:
-            print(".", file=sys.stderr, flush=True, end='')
+    # Do the actual work now
+    matches = replace(f, o, regex, old_str, new_str, encoding)
 
-        # If we don't have an explicit encoding, guess
-        block = b''
-        if encoding is None:
-            detector = UniversalDetector()
-            while True:
-                next_block = f.read(io.DEFAULT_BUFFER_SIZE)
-                if len(next_block) == 0: break
-                block += next_block
-                detector.feed(next_block)
-                if detector.done: break
-            f = chain_streams([io.BytesIO(block), f])
+    f.close()
+    o.close()
 
-            detector.close()
-            if detector.done:
-                encoding = detector.result['encoding']
-                if opts.verbose:
-                    warn("guessed encoding '{}'".format(encoding))
-                else:
-                    encoding = locale.getpreferredencoding(False)
-                    warn("could not guess encoding; using locale default '{}'".format(encoding))
+    if matches == 0:
+        os.unlink(tmp_path)
+        continue
 
-        # Do the actual work now
-        matches = replace(f, o, regex, old_str, new_str, encoding)
-
-        f.close()
-        o.close()
-
-        if matches == 0:
-            os.unlink(tmp_path)
-            continue
-
-        if opts.dry_run:
-            try:
-                fn = os.path.realpath(filename)
-            except OSError as e:
-                fn = filename
-
-            if not opts.quiet:
-                print("  {}".format(fn), file=sys.stderr)
-
-            os.unlink(tmp_path)
-            total_matches += matches
-            continue
-
-        if opts.prompt:
-            print("\nSave \"{}\"? ([Y]/N) ".format(filename), file=sys.stderr, end='')
-
-            line = ""
-            while line == "" or line[0] not in "Yy\nnN":
-                line = input()
-
-            if line[0] in "nN":
-                print("Not saved", file=sys.stderr)
-                os.unlink(tmp_path)
-                continue
-
-            print("Saved", file=sys.stderr)
-
-        if opts.do_backup:
-            try:
-                os.rename(filename, filename + "~")
-            except OSError as e:
-                warn("Error renaming {} to {}:".format(filename, filename + "~", e))
-                continue
-
-        # Rename the file
+    if args.dry_run:
         try:
-            os.rename(tmp_path, filename)
+            fn = os.path.realpath(filename)
         except OSError as e:
-            warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
+            fn = filename
+
+        if not args.quiet:
+            print("  {}".format(fn), file=sys.stderr)
+
+        os.unlink(tmp_path)
+        total_matches += matches
+        continue
+
+    if args.prompt:
+        print("\nSave \"{}\"? ([Y]/N) ".format(filename), file=sys.stderr, end='')
+
+        line = ""
+        while line == "" or line[0] not in "Yy\nnN":
+            line = input()
+
+        if line[0] in "nN":
+            print("Not saved", file=sys.stderr)
             os.unlink(tmp_path)
             continue
 
-        # Restore the times
-        if opts.keep_times:
-            try:
-                os.utime(filename, (perms.st_atime, perms.st_mtime))
-            except OSError as e:
-                warn("Error setting timestamps of {}: {}".format(filename, e))
+        print("Saved", file=sys.stderr)
 
-        total_matches += matches
+    if args.backup:
+        try:
+            os.rename(filename, filename + "~")
+        except OSError as e:
+            warn("Error renaming {} to {}:".format(filename, filename + "~", e))
+            continue
 
-    # We're about to exit, give a summary
-    if not opts.quiet:
-        warn("A total of {} matches {} in {} file{} searched".format(
-            total_matches,
-            "found" if opts.dry_run else "replaced",
-            total_files,
-            "s" if total_files != 1 else "",
-        ))
-        if opts.dry_run:
-            warn("None replaced (simulation mode)")
+    # Rename the file
+    try:
+        os.rename(tmp_path, filename)
+    except OSError as e:
+        warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
+        os.unlink(tmp_path)
+        continue
 
+    # Restore the times
+    if args.keep_times:
+        try:
+            os.utime(filename, (perms.st_atime, perms.st_mtime))
+        except OSError as e:
+            warn("Error setting timestamps of {}: {}".format(filename, e))
 
-if __name__ == "__main__":
-    main()
+    total_matches += matches
+
+# We're about to exit, give a summary
+if not args.quiet:
+    warn("A total of {} matches {} in {} file{} searched".format(
+        total_matches,
+        "found" if args.dry_run else "replaced",
+        total_files,
+        "s" if total_files != 1 else "",
+    ))
+    if args.dry_run:
+        warn("None replaced (simulation mode)")
