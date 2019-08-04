@@ -13,8 +13,67 @@ from stat import S_ISDIR, S_ISREG
 import sys
 import tempfile
 
+from chardet.universaldetector import UniversalDetector
 
-VERSION = "1.5.8"
+
+VERSION = "1.6.0"
+
+
+# From: https://stackoverflow.com/questions/24528278/stream-multiple-files-into-a-readable-object-in-python
+# Note: this code is licensed under CC-BY-SA 3.0, which is upwards-compatible
+# with 4.0, and hence compatible with GPLv3.
+def chain_streams(streams, buffer_size=io.DEFAULT_BUFFER_SIZE):
+    """
+    Chain an iterable of streams together into a single buffered stream.
+    Usage:
+        def generate_open_file_streams():
+            for file in filenames:
+                yield open(file, 'rb')
+        f = chain_streams(generate_open_file_streams())
+        f.read()
+    """
+
+    class ChainStream(io.RawIOBase):
+        def __init__(self):
+            self.leftover = b''
+            self.stream_iter = iter(streams)
+            try:
+                self.stream = next(self.stream_iter)
+            except StopIteration:
+                self.stream = None
+
+        def readable(self):
+            return True
+
+        def _read_next_chunk(self, max_length):
+            # Return 0 or more bytes from the current stream, first returning all
+            # leftover bytes. If the stream is closed returns b''
+            if self.leftover:
+                return self.leftover
+            elif self.stream is not None:
+                return self.stream.read(max_length)
+            else:
+                return b''
+
+        def readinto(self, b):
+            buffer_length = len(b)
+            chunk = self._read_next_chunk(buffer_length)
+            while len(chunk) == 0:
+                # move to next stream
+                if self.stream is not None:
+                    self.stream.close()
+                try:
+                    self.stream = next(self.stream_iter)
+                    chunk = self._read_next_chunk(buffer_length)
+                except StopIteration:
+                    # No more streams to chain together
+                    self.stream = None
+                    return 0  # indicate EOF
+            output, self.leftover = chunk[:buffer_length], chunk[buffer_length:]
+            b[:len(output)] = output
+            return len(output)
+
+    return io.BufferedReader(ChainStream(), buffer_size=buffer_size)
 
 
 def show_license(*eat):
@@ -105,16 +164,17 @@ def caselike(model, string):
             string = string.upper()
     return string
 
-def blockrepl(instream, outstream, regex, before, after):
+def replace(instream, outstream, regex, before, after, encoding):
     patlen = len(before)
     sum = 0
-    tonext = u''
 
-    while 1:
+    tonext = u''
+    while True:
         block = instream.read(io.DEFAULT_BUFFER_SIZE)
-        if not block:
+        if len(block) == 0:
             break
 
+        block = block.decode(encoding=encoding)
         parts = regex.split(tonext + block)
         sum += len(parts) // 2
         lastpart = parts[-1]
@@ -132,9 +192,9 @@ def blockrepl(instream, outstream, regex, before, after):
                 parts[i] = replace
 
         joined_parts = ''.join(parts)
-        outstream.write(joined_parts)
+        outstream.write(joined_parts.encode(encoding=encoding))
 
-    outstream.write(tonext)
+    outstream.write(tonext.encode(encoding=encoding))
 
     return sum
 
@@ -149,6 +209,11 @@ def create_cli_args_parser():
                       callback=show_license,
                       help="show the software license")
 
+    parser.add_option("--encoding",
+                      action="store",
+                      dest="encoding",
+                      default=None,
+                      help="specify character set encoding")
     parser.add_option("-x",
                       metavar="SUFFIX",
                       action="append",
@@ -246,11 +311,7 @@ def parse_cli_args():
 
 
 def main():
-    encoding = locale.getdefaultlocale()[1]
-    if encoding is None:
-        warn("Could not determine default locale")
-        sys.exit(os.EX_CONFIG)
-
+    global opts
     opts, args = parse_cli_args()
 
     old_str = args[0]
@@ -286,6 +347,10 @@ def main():
     if opts.dry_run and not opts.quiet:
         warn("The files listed below would be modified in a replace operation")
 
+    encoding = None
+    if opts.encoding:
+        encoding = opts.encoding
+
     if opts.escapes:
         old_str = unescape(old_str)
         new_str = unescape(new_str)
@@ -303,7 +368,7 @@ def main():
 
         # Open the input file
         try:
-            f = open(filename, encoding=encoding)
+            f = open(filename, "rb")
         except IOError as e:
             warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
             continue
@@ -311,7 +376,7 @@ def main():
         # Create the output file
         try:
             o, tmp_path = tempfile.mkstemp("", ".tmp.")
-            o = os.fdopen(o, "w", encoding=encoding)
+            o = os.fdopen(o, "wb")
         except OSError as e:
             warn("SKIPPING {}: cannot create temp file; error: {}".format(filename, e))
             continue
@@ -334,8 +399,29 @@ def main():
         elif not opts.quiet and not opts.dry_run:
             print(".", file=sys.stderr, flush=True, end='')
 
+        # If we don't have an explicit encoding, guess
+        block = b''
+        if encoding is None:
+            detector = UniversalDetector()
+            while True:
+                next_block = f.read(io.DEFAULT_BUFFER_SIZE)
+                if len(next_block) == 0: break
+                block += next_block
+                detector.feed(next_block)
+                if detector.done: break
+            f = chain_streams([io.BytesIO(block), f])
+
+            detector.close()
+            if detector.done:
+                encoding = detector.result['encoding']
+                if opts.verbose:
+                    warn("guessed encoding '{}'".format(encoding))
+                else:
+                    encoding = locale.getpreferredencoding(False)
+                    warn("could not guess encoding; using locale default '{}'".format(encoding))
+
         # Do the actual work now
-        matches = blockrepl(f, o, regex, old_str, new_str)
+        matches = replace(f, o, regex, old_str, new_str, encoding)
 
         f.close()
         o.close()
