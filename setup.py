@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016 Kevin Coyner <kcoyner@debian.org>
 #
 # This file is part of rpl.
@@ -9,9 +7,9 @@
 
 from setuptools import setup
 
-DESC = """Free replacement for rpl (replace strings in files)."""
+DESC = """Replace strings in files."""
 
-long_description =  open('README.md').read()
+long_description = open('README.md').read()
 
 setup(name='rpl',
       version='1.6.0',

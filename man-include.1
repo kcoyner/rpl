@@ -1,0 +1,29 @@
+[description]
+Basic usage is to specify two strings and one or more filenames or
+directories on the command line.
+The first string is the string to replace, and the second string is
+the replacement string.
+
+[examples]
+Replace all occurrences of ‘F’ (on word boundaries) with ‘A’
+in all text files under the
+.I grades/
+directory:
+.PP
+.nf
+.RS
+rpl \-Rwd \-x'.txt' 'F' 'A' grades/
+.RE
+
+[>copyright]
+.PP
+This program was written for Debian as a free replacement for the non-free
+.B rpl
+program by Joe Laffey.
+
+[see also]
+.BR find (1) ,
+.BR sed (1) .
+
+[author]
+Written by G\[:o]ran Weinholt and Reuben Thomas.

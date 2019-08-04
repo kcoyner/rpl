@@ -184,8 +184,8 @@ def create_cli_args_parser():
     """Create command line argument parser."""
     usage = "usage: %prog [options] old_string new_string target_file(s)"
     parser = optparse.OptionParser(usage, version="%prog " + VERSION + '''
-Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
-Copyright (C) 2004 Christian Haggstrom <chm@c00.info>
+Copyright (C) 2004-2005 Göran Weinholt <weinholt@debian.org>
+Copyright (C) 2004 Christian Häggström <chm@c00.info>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
 Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
 Copyright (C) 2018-2019 Reuben Thomas <rrt@sc3d.org>
@@ -217,7 +217,7 @@ For more information about these matters, see the file named COPYING.''')
                       action="store_true",
                       dest="do_backup",
                       default=False,
-                      help="make a backup before overwriting files")
+                      help="rename original file to file~ before replacing")
 
     parser.add_option("-q", "--quiet",
                       action="store_true",
@@ -271,7 +271,7 @@ For more information about these matters, see the file named COPYING.''')
                       action="store_true",
                       dest="hidden_files",
                       default=False,
-                      help="do not ignore files and directories starting with .")
+                      help="process hidden files and directories (starting with a period)")
 
     return parser
 
