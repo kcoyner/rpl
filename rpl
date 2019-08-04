@@ -76,21 +76,6 @@ def chain_streams(streams, buffer_size=io.DEFAULT_BUFFER_SIZE):
     return io.BufferedReader(ChainStream(), buffer_size=buffer_size)
 
 
-def show_license(*eat):
-    print("""rpl - replace strings in files
-Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
-Copyright (C) 2004 Christian Haggstrom <chm@c00.info>
-Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
-Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
-Copyright (C) 2018-2019 Reuben Thomas <rrt@sc3d.org>
-
-rpl comes with ABSOLUTELY NO WARRANTY.
-You may redistribute copies of rpl under the terms of the
-GNU General Public License.
-For more information about these matters, see the file named COPYING.""")
-    sys.exit(0)
-
-
 def warn(message):
     print("\nrpl: {}".format(message), file=sys.stderr)
 
@@ -202,12 +187,17 @@ def replace(instream, outstream, regex, before, after, encoding):
 def create_cli_args_parser():
     """Create command line argument parser."""
     usage = "usage: %prog [options] old_string new_string target_file(s)"
-    parser = optparse.OptionParser(usage, version="%prog " + VERSION)
+    parser = optparse.OptionParser(usage, version="%prog " + VERSION + '''
+Copyright (C) 2004-2005 Goran Weinholt <weinholt@debian.org>
+Copyright (C) 2004 Christian Haggstrom <chm@c00.info>
+Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
+Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
+Copyright (C) 2018-2019 Reuben Thomas <rrt@sc3d.org>
 
-    parser.add_option("-L", "--license",
-                      action="callback",
-                      callback=show_license,
-                      help="show the software license")
+rpl comes with ABSOLUTELY NO WARRANTY.
+You may redistribute copies of rpl under the terms of the
+GNU General Public License.
+For more information about these matters, see the file named COPYING.''')
 
     parser.add_option("--encoding",
                       action="store",
