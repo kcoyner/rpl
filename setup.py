@@ -20,7 +20,7 @@ setup(name='rpl',
       author=u'Göran Weinholt',
       author_email=u'weinholt@debian.org',
       url='https://github.com/kcoyner/rpl',
-      license='GPL v2 or later',
+      license='GPL v3 or later',
       scripts=['rpl'],
       classifiers=[
           'Environment :: Console',
