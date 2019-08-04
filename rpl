@@ -283,7 +283,7 @@ def main():
             sys.exit(os.EX_DATAERR)
 
     if new_str == "" and not opts.quiet:
-        print("Really DELETE all occurences of {} ({})? (Y/[N]) ".format(
+        print("Really DELETE all occurrences of {} ({})? (Y/[N]) ".format(
             old_str,
             "ignoring case" if opts.ignore.case else "case sensitive"
         ), file=sys.stderr, end='')
