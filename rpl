@@ -140,7 +140,12 @@ def replace(instream, outstream, regex, before, after, encoding):
         if len(block) == 0:
             break
 
-        block = block.decode(encoding=encoding)
+        try:
+            block = block.decode(encoding=encoding)
+        except:
+            warn("error decoding file; aborting!")
+            return 0
+
         parts = regex.split(tonext + block)
         sum += len(parts) // 2
         lastpart = parts[-1]
