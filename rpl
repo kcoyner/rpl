@@ -19,61 +19,57 @@ from chardet.universaldetector import UniversalDetector
 VERSION = "1.6.0"
 
 
-# From: https://stackoverflow.com/questions/24528278/stream-multiple-files-into-a-readable-object-in-python
-# Note: this code is licensed under CC-BY-SA 3.0, which is upwards-compatible
-# with 4.0, and hence compatible with GPLv3.
-def chain_streams(streams, buffer_size=io.DEFAULT_BUFFER_SIZE):
+# Adapted from: https://stackoverflow.com/questions/24528278/stream-multiple-files-into-a-readable-object-in-python
+# Note: the original code is licensed under CC-BY-SA 3.0, which is
+# upwards-compatible with 4.0, and hence compatible with GPLv3.
+class ChainStream(io.RawIOBase):
     """
     Chain an iterable of streams together into a single buffered stream.
     Usage:
         def generate_open_file_streams():
             for file in filenames:
                 yield open(file, 'rb')
-        f = chain_streams(generate_open_file_streams())
+        f = io.BufferedReader(ChainStream(generate_open_file_streams()))
         f.read()
     """
+    def __init__(self, streams):
+        self.leftover = b''
+        self.stream_iter = iter(streams)
+        try:
+            self.stream = next(self.stream_iter)
+        except StopIteration:
+            self.stream = None
 
-    class ChainStream(io.RawIOBase):
-        def __init__(self):
-            self.leftover = b''
-            self.stream_iter = iter(streams)
+    def readable(self):
+        return True
+
+    def _read_next_chunk(self, max_length):
+        # Return 0 or more bytes from the current stream, first returning all
+        # leftover bytes. If the stream is closed returns b''
+        if self.leftover:
+            return self.leftover
+        elif self.stream is not None:
+            return self.stream.read(max_length)
+        else:
+            return b''
+
+    def readinto(self, b):
+        buffer_length = len(b)
+        chunk = self._read_next_chunk(buffer_length)
+        while len(chunk) == 0:
+            # move to next stream
+            if self.stream is not None:
+                self.stream.close()
             try:
                 self.stream = next(self.stream_iter)
+                chunk = self._read_next_chunk(buffer_length)
             except StopIteration:
+                # No more streams to chain together
                 self.stream = None
-
-        def readable(self):
-            return True
-
-        def _read_next_chunk(self, max_length):
-            # Return 0 or more bytes from the current stream, first returning all
-            # leftover bytes. If the stream is closed returns b''
-            if self.leftover:
-                return self.leftover
-            elif self.stream is not None:
-                return self.stream.read(max_length)
-            else:
-                return b''
-
-        def readinto(self, b):
-            buffer_length = len(b)
-            chunk = self._read_next_chunk(buffer_length)
-            while len(chunk) == 0:
-                # move to next stream
-                if self.stream is not None:
-                    self.stream.close()
-                try:
-                    self.stream = next(self.stream_iter)
-                    chunk = self._read_next_chunk(buffer_length)
-                except StopIteration:
-                    # No more streams to chain together
-                    self.stream = None
-                    return 0  # indicate EOF
-            output, self.leftover = chunk[:buffer_length], chunk[buffer_length:]
-            b[:len(output)] = output
-            return len(output)
-
-    return io.BufferedReader(ChainStream(), buffer_size=buffer_size)
+                return 0  # indicate EOF
+        output, self.leftover = chunk[:buffer_length], chunk[buffer_length:]
+        b[:len(output)] = output
+        return len(output)
 
 
 def warn(message):
@@ -333,7 +329,7 @@ for filename, perms in files:
             block += next_block
             detector.feed(next_block)
             if detector.done: break
-        f = chain_streams([io.BytesIO(block), f])
+        f = io.BufferedReader(ChainStream([io.BytesIO(block), f]))
 
         detector.close()
         if detector.done:
