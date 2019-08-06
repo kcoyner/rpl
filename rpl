@@ -171,9 +171,10 @@ def replace(instream, outstream, regex, before, after, encoding):
 
 
 # Create command line argument parser.
-parser = argparse.ArgumentParser(description="usage: %prog [options] old_string new_string target_file(s)")
+parser = argparse.ArgumentParser(description="Search and replace text in files.",
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--version', action='version',
-                    version="%prog " + VERSION + '''
+                    version="%(prog)s " + VERSION + '''
 Copyright (C) 2004-2005 Göran Weinholt <weinholt@debian.org>
 Copyright (C) 2004 Christian Häggström <chm@c00.info>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
