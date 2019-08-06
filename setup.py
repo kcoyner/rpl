@@ -20,7 +20,7 @@ setup(name='rpl',
       url='https://github.com/kcoyner/rpl',
       license='GPL v3 or later',
       scripts=['rpl'],
-      install_requires=['chardet']
+      install_requires=['chardet'],
       classifiers=[
           'Environment :: Console',
           'Programming Language :: Python :: 3',
