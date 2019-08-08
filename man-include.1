@@ -12,7 +12,7 @@ directory:
 .PP
 .nf
 .RS
-rpl \-Rwd \-x'.txt' 'F' 'A' grades/
+find grades/ -name '*.txt' | xargs rpl \-wd 'F' 'A'
 .RE
 
 [>copyright]
