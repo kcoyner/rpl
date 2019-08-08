@@ -16,7 +16,7 @@ import tempfile
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.6.0"
+VERSION = "1.6.1"
 
 
 # Adapted from: https://stackoverflow.com/questions/24528278/stream-multiple-files-into-a-readable-object-in-python
