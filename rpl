@@ -211,7 +211,7 @@ parser.add_argument("-s", "--dry-run",
 
 parser.add_argument("-e", "--escape",
                     action="store_true",
-                    help="expand escapes in old_string and new_string")
+                    help="expand escapes in OLD-TEXT and NEW-TEXT")
 
 parser.add_argument("-p", "--prompt",
                     action="store_true",
