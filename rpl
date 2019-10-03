@@ -220,7 +220,7 @@ parser.add_argument("-i", "--ignore-case",
 
 parser.add_argument("-w", "--whole-words",
                     action="store_true",
-                    help="whole words (old_string matches on word boundaries only)")
+                    help="whole words (OLD-TEXT matches on word boundaries only)")
 
 parser.add_argument("-b", "--backup",
                     action="store_true",
