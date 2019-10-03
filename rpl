@@ -131,16 +131,32 @@ def replace(instream, outstream, regex, before, after, encoding):
     sum = 0
 
     tonext = u''
+    retry_prefix = b''
     while True:
-        block = instream.read(io.DEFAULT_BUFFER_SIZE)
+        block = retry_prefix + instream.read(io.DEFAULT_BUFFER_SIZE)
         if len(block) == 0:
             break
 
         try:
+            err = None
             block = block.decode(encoding=encoding)
-        except:
-            warn("error decoding file; aborting!")
-            return 0
+            retry_prefix = b''
+        except ValueError as e:
+            # Try carrying invalid input over to next iteration in case it's
+            # just incomplete
+            if e.start > 0:
+                retry_prefix = block[e.start:]
+                try:
+                    block = block[:e.start].decode(encoding=encoding)
+                    err = None
+                except ValueError as e:
+                    err = e
+        finally:
+            if err is not None:
+                if isinstance(e, UnicodeError):
+                    warn("Unicode decoding error: {}".format(e.reason))
+                warn("error decoding file; aborting!")
+                return 0
 
         parts = regex.split(tonext + block)
         sum += len(parts) // 2
