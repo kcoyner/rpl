@@ -247,7 +247,7 @@ new_str = args.new_str
 if new_str == "" and not args.quiet:
     print("Really DELETE all occurrences of {} ({})? (Y/[N]) ".format(
         old_str,
-        "ignoring case" if args.ignore.case else "case sensitive"
+        "ignoring case" if args.ignore_case else "case sensitive"
     ), file=sys.stderr, end='')
 
     line = input()
