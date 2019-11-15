@@ -25,6 +25,8 @@ except ImportError:
 from stat import S_ISDIR, S_ISREG
 import sys
 import tempfile
+import warnings
+from warnings import warn
 
 from chardet.universaldetector import UniversalDetector
 
@@ -85,8 +87,9 @@ class ChainStream(io.RawIOBase):
         return len(output)
 
 
-def warn(message):
-    print("\nrpl: {}".format(message), file=sys.stderr)
+def simple_warning(msg, cat, filename, lineno, file, line):
+    print("\nrpl: {}".format(msg), file=file)
+warnings.showwarning = simple_warning
 
 def get_files(filenames, verbose, hidden_files):
     """Yield (filename, permissions) pairs."""
