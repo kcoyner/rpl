@@ -33,6 +33,10 @@ from chardet.universaldetector import UniversalDetector
 
 VERSION = "1.6.2"
 
+def simple_warning(msg, cat, filename, lineno, file, line):
+    print("\n{}: {}".format(parser.prog, msg), file=file)
+warnings.showwarning = simple_warning
+
 
 # Adapted from: https://stackoverflow.com/questions/24528278/stream-multiple-files-into-a-readable-object-in-python
 # Note: the original code is licensed under CC-BY-SA 3.0, which is
@@ -86,10 +90,6 @@ class ChainStream(io.RawIOBase):
         b[:len(output)] = output
         return len(output)
 
-
-def simple_warning(msg, cat, filename, lineno, file, line):
-    print("\nrpl: {}".format(msg), file=file)
-warnings.showwarning = simple_warning
 
 def get_files(filenames, verbose, hidden_files):
     """Yield (filename, permissions) pairs."""
@@ -209,8 +209,8 @@ Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
 Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
 Copyright (C) 2018-2019 Reuben Thomas <rrt@sc3d.org>
 
-rpl comes with ABSOLUTELY NO WARRANTY.
-You may redistribute copies of rpl under the terms of the
+%(prog)s comes with ABSOLUTELY NO WARRANTY.
+You may redistribute copies of %(prog)s under the terms of the
 GNU General Public License.
 For more information about these matters, see the file named COPYING.''')
 
