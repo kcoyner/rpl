@@ -5,7 +5,7 @@ from setuptools import setup
 long_description = open('README.md').read()
 
 setup(name='rpl',
-      version='1.6.2',
+      version='1.6.4',
       description="""Replace strings in files.""",
       long_description=long_description,
       maintainer='Reuben Thomas',
