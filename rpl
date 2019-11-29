@@ -18,6 +18,7 @@ import argparse
 import os
 import io
 import re
+import shutil
 try:
     import readline
 except ImportError:
@@ -411,14 +412,14 @@ for filename, perms in files:
 
     if args.backup:
         try:
-            os.rename(filename, filename + "~")
+            shutil.move(filename, filename + "~")
         except OSError as e:
             warn("Error renaming {} to {}:".format(filename, filename + "~", e))
             continue
 
     # Rename the file
     try:
-        os.rename(tmp_path, filename)
+        shutil.move(tmp_path, filename)
     except OSError as e:
         warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
         os.unlink(tmp_path)
