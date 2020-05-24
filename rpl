@@ -356,12 +356,10 @@ for filename, perms in files:
     block = b''
     if encoding is None:
         detector = UniversalDetector()
-        while True:
-            next_block = f.read(io.DEFAULT_BUFFER_SIZE)
-            if len(next_block) == 0: break
+        next_block = f.read(io.DEFAULT_BUFFER_SIZE)
+        if len(next_block) != 0:
             block += next_block
             detector.feed(next_block)
-            if detector.done: break
         f = io.BufferedReader(ChainStream([io.BytesIO(block), f]))
 
         detector.close()
