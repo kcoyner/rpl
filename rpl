@@ -32,7 +32,7 @@ from warnings import warn
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.6.5"
+VERSION = "1.6.6"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file)
