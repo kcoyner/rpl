@@ -369,8 +369,9 @@ for filename, perms in files:
             encoding = detector.result['encoding']
             if args.verbose:
                 warn("guessed encoding '{}'".format(encoding))
-            else:
-                encoding = locale.getpreferredencoding(False)
+        else:
+            encoding = locale.getpreferredencoding(False)
+            if args.verbose:
                 warn("could not guess encoding; using locale default '{}'".format(encoding))
 
     # Do the actual work now
