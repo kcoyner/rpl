@@ -161,6 +161,7 @@ def replace(instream, outstream, regex, before, after, encoding):
         except ValueError as e:
             # Try carrying invalid input over to next iteration in case it's
             # just incomplete
+            err = e
             if e.start > 0:
                 retry_prefix = block[e.start:]
                 try:
@@ -170,8 +171,8 @@ def replace(instream, outstream, regex, before, after, encoding):
                     err = e
         finally:
             if err is not None:
-                if isinstance(e, UnicodeError):
-                    warn("Unicode decoding error: {}".format(e.reason))
+                if isinstance(err, UnicodeError):
+                    warn("Unicode decoding error: {}".format(err.reason))
                 warn("error decoding file; aborting!")
                 return 0
 
