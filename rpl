@@ -322,6 +322,10 @@ files = get_files(files, args.verbose, args.hidden_files)
 for filename, perms in files:
     total_files += 1
 
+    # If no encoding specified, reset guess for each file
+    if not args.encoding:
+        encoding = None
+
     # Open the input file
     try:
         f = open(filename, "rb")
