@@ -32,7 +32,7 @@ from warnings import warn
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.6.8"
+VERSION = "1.6.9"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file)
@@ -288,17 +288,18 @@ if new_str == "" and not args.quiet:
 
     line = input()
     if line != "" and line[0] in "nN":
-        warn("User cancelled operation.")
+        warn("User cancelled operation")
         sys.exit(os.EX_TEMPFAIL)
 
 # Tell the user what is going to happen
-warn("{} \"{}\" with \"{}\" ({}; {})".format(
-    "Simulating replacement of" if args.dry_run else "Replacing",
-    old_str,
-    new_str,
-    "ignoring case" if args.ignore_case else "case sensitive",
-    "whole words only" if args.whole_words else "partial words matched",
-))
+if not args.quiet:
+    warn("{} \"{}\" with \"{}\" ({}; {})".format(
+        "Simulating replacement of" if args.dry_run else "Replacing",
+        old_str,
+        new_str,
+        "ignoring case" if args.ignore_case else "case sensitive",
+        "whole words only" if args.whole_words else "partial words matched",
+    ))
 
 if args.dry_run and not args.quiet:
     warn("The files listed below would be modified in a replace operation")
@@ -330,7 +331,7 @@ for filename, perms in files:
     try:
         f = open(filename, "rb")
     except IOError as e:
-        warn("SKIPPING {}: cannot open for reading; error: {}".format(filename, e))
+        warn("Skipping {}: cannot open for reading; error: {}".format(filename, e))
         continue
 
     # Create the output file
@@ -338,7 +339,7 @@ for filename, perms in files:
         o, tmp_path = tempfile.mkstemp("", ".tmp.")
         o = os.fdopen(o, "wb")
     except OSError as e:
-        warn("SKIPPING {}: cannot create temp file; error: {}".format(filename, e))
+        warn("Skipping {}: cannot create temp file; error: {}".format(filename, e))
         continue
 
     # Set permissions and owner
@@ -348,9 +349,9 @@ for filename, perms in files:
     except OSError as e:
         warn("Unable to set owner/group/perms of {}; error: {}".format(filename, e))
         if args.force:
-            warn("WARNING: New owner/group/perms may not match!\n")
+            warn("New owner/group/perms may not match!\n")
         else:
-            warn("SKIPPING {}!\n".format(filename))
+            warn("Skipping {}!\n".format(filename))
             os.unlink(tmp_path)
             continue
 
@@ -373,11 +374,11 @@ for filename, perms in files:
         if detector.done:
             encoding = detector.result['encoding']
             if args.verbose:
-                warn("guessed encoding '{}'".format(encoding))
+                warn("Guessed encoding '{}'".format(encoding))
         else:
             encoding = locale.getpreferredencoding(False)
             if args.verbose:
-                warn("could not guess encoding; using locale default '{}'".format(encoding))
+                warn("Could not guess encoding; using locale default '{}'".format(encoding))
 
     # Do the actual work now
     matches = replace(f, o, regex, old_str, new_str, encoding)
