@@ -92,7 +92,7 @@ class ChainStream(io.RawIOBase):
         return len(output)
 
 
-def get_files(filenames, verbose, hidden_files):
+def get_files(filenames, verbose):
     """Yield (filename, permissions) pairs."""
     for filename in filenames:
         try:
@@ -261,10 +261,6 @@ parser.add_argument("-d", "--keep-times",
                     action="store_true",
                     help="keep the modification times on modified files")
 
-parser.add_argument("-a", "--hidden-files",
-                    action="store_true",
-                    help="process hidden files and directories (starting with a period)")
-
 parser.add_argument('old_str', metavar='OLD-TEXT')
 parser.add_argument('new_str', metavar='NEW-TEXT')
 parser.add_argument('file', metavar='FILE', nargs='+')
@@ -309,7 +305,7 @@ regex = re.compile(r"(" + regex_str + r")", re.I if args.ignore_case else 0)
 
 total_files = 0
 total_matches = 0
-files = get_files(files, args.verbose, args.hidden_files)
+files = get_files(files, args.verbose)
 for filename, perms in files:
     total_files += 1
 
