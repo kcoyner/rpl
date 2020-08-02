@@ -231,7 +231,7 @@ parser.add_argument("-w", "--whole-words",
 
 parser.add_argument("-b", "--backup",
                     action="store_true",
-                    help="rename original file to file~ before replacing")
+                    help="rename original FILE to FILE~ before replacing")
 
 parser.add_argument("-q", "--quiet",
                     action="store_true",
