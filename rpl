@@ -280,16 +280,6 @@ for file in files:
 
 old_str = args.old_str
 new_str = args.new_str
-if new_str == "" and not args.quiet:
-    print("Really DELETE all occurrences of {} ({})? (Y/[N]) ".format(
-        old_str,
-        "ignoring case" if args.ignore_case else "case sensitive"
-    ), file=sys.stderr, end='')
-
-    line = input()
-    if line != "" and line[0] in "nN":
-        warn("User cancelled operation")
-        sys.exit(os.EX_TEMPFAIL)
 
 # Tell the user what is going to happen
 if not args.quiet:
