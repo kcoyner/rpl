@@ -5,7 +5,8 @@ all: rpl.1
 check:
 	./rpl --version && \
 	( cp lorem.orig.txt lorem.txt; ./rpl Lorem L-O-R-E-M lorem.txt; egrep L-O-R-E-M lorem.txt && rm lorem.txt || exit 1 ) && \
-	( cp lorem.orig.txt lorem.txt; ./rpl -iv Lorem L-O-R-E-M lorem.txt; egrep L-O-R-E-M lorem.txt && rm lorem.txt || exit 1 )
+	( cp lorem.orig.txt lorem.txt; ./rpl -iv Lorem L-O-R-E-M lorem.txt; egrep L-O-R-E-M lorem.txt && rm lorem.txt || exit 1 ) && \
+	( cp lorem.orig.txt lorem.txt; ./rpl -mv lorem loReM lorem.txt; egrep -i lorem lorem.txt && rm lorem.txt || exit 1 )
 
 clean:
 	rm -f rpl.1

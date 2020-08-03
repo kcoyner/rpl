@@ -190,7 +190,7 @@ def replace(instream, outstream, regex, before, after, encoding):
         for i in range(1, len(parts), 2):
             if parts[i] != '':
                 replace = after
-                if regex.flags & re.I != 0:
+                if args.ignore_case == "match":
                     replace = caselike(parts[i], after)
                 parts[i] = replace
 
@@ -223,7 +223,13 @@ parser.add_argument("--encoding", metavar="ENCODING",
 
 parser.add_argument("-i", "--ignore-case",
                     action="store_true",
-                    help="match case-insensitively")
+                    help="search case-insensitively")
+
+parser.add_argument("-m", "--match-case",
+                    action="store_const",
+                    dest="ignore_case",
+                    const="match",
+                    help="ignore case when searching, but try to match case of replacement to case of original, either capitalized, all upper-case, or mixed")
 
 parser.add_argument("-w", "--whole-words",
                     action="store_true",
@@ -283,7 +289,8 @@ if not args.quiet:
         "Simulating replacement of" if args.dry_run else "Replacing",
         old_str,
         new_str,
-        "ignoring case" if args.ignore_case else "case sensitive",
+        "ignoring case" if args.ignore_case == True else
+        ("matching case" if args.ignore_case == "match" else "case sensitive"),
         "whole words only" if args.whole_words else "partial words matched",
     ))
 
