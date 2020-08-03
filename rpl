@@ -98,17 +98,17 @@ def get_files(filenames, verbose):
         try:
             perms = os.lstat(filename)
         except OSError as e:
-            warn("SKIPPING {}: unable to read permissions ({})".format(filename, e))
+            warn("Skipping {}: unable to read permissions ({})".format(filename, e))
             continue
 
         if S_ISDIR(perms.st_mode):
             if verbose:
-                warn("SKIPPING directory {}".format(filename))
+                warn("Skipping directory {}".format(filename))
             continue
         elif S_ISREG(perms.st_mode):
             yield filename, perms
         else:
-            warn("SKIPPING: {} (not a regular file)".format(filename))
+            warn("Skipping: {} (not a regular file)".format(filename))
 
 
 def unescape(s):
