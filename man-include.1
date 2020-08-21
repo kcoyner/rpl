@@ -4,15 +4,20 @@ on the command line.
 The first string is the string to replace, and the second string is
 the replacement string.
 
+Filenames may include glob patterns (these must be quoted to
+avoid being interpreted by the shell), and in particular may use ‘\fI**\fR’ to
+match all files and zero or more directories and subdirectories. Tilde and
+environment variable expansion is also performed.
+
 [examples]
 Replace all occurrences of the word ‘F’ with ‘A’
-in all files with extension \fI.txt\R under the
+in all files with extension \fI.txt\fR under the
 .I grades/
 directory:
 .PP
 .nf
 .RS
-find grades/ -name '*.txt' | xargs rpl \-wd 'F' 'A'
+rpl \-wd 'F' 'A' 'grades/**/*.txt'
 .RE
 
 [>copyright]

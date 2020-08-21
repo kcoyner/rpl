@@ -24,6 +24,7 @@ try:
 except ImportError:
     pass
 from stat import S_ISDIR, S_ISREG
+import glob
 import sys
 import tempfile
 import warnings
@@ -255,6 +256,10 @@ parser.add_argument("-e", "--escape",
                     action="store_true",
                     help="expand escapes in OLD-TEXT and NEW-TEXT")
 
+parser.add_argument("--noglob",
+                    action="store_true",
+                    help="disable globbing and other expansions")
+
 parser.add_argument("-p", "--prompt",
                     action="store_true",
                     help="prompt before modifying each file")
@@ -272,9 +277,17 @@ parser.add_argument('new_str', metavar='NEW-TEXT')
 parser.add_argument('file', metavar='FILE', nargs='+')
 
 args = parser.parse_args()
+files = args.file
+
+# Perform globbing and tilde and variable expansion, if desired.
+if not args.noglob:
+    globbed_files = []
+    for file in list(map(os.path.expanduser, map(os.path.expandvars, files))):
+        globbed_files += glob.glob(file, recursive=True)
+    files = globbed_files
+print(files)
 
 # See if all the files actually exist
-files = args.file
 for file in files:
     if not os.path.exists(file):
         warn("File \"{}\" not found".format(file))
@@ -312,8 +325,7 @@ regex = re.compile(r"(" + regex_str + r")", re.I if args.ignore_case else 0)
 
 total_files = 0
 total_matches = 0
-files = get_files(files, args.verbose)
-for filename, perms in files:
+for filename, perms in get_files(files, args.verbose):
     total_files += 1
 
     # If no encoding specified, reset guess for each file
