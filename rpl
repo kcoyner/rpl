@@ -19,10 +19,6 @@ import os
 import io
 import re
 import shutil
-try:
-    import readline
-except ImportError:
-    pass
 from stat import S_ISDIR, S_ISREG
 import glob
 import sys
