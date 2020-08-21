@@ -358,8 +358,6 @@ for filename, perms in get_files(files, args.verbose):
 
     if args.verbose and not args.dry_run:
         warn("Processing: {}".format(filename))
-    elif not args.quiet and not args.dry_run:
-        print(".", file=sys.stderr, flush=True, end='')
 
     # If we don't have an explicit encoding, guess
     block = b''
