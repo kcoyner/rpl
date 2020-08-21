@@ -451,11 +451,9 @@ for filename, perms in get_files(files, args.verbose):
 
 # We're about to exit, give a summary
 if not args.quiet:
-    warn("A total of {} matches {} in {} file{} searched".format(
+    warn("{} matches {} in {} file{}".format(
         total_matches,
         "found" if args.dry_run else "replaced",
         total_files,
         "s" if total_files != 1 else "",
     ))
-    if args.dry_run:
-        warn("None replaced (simulation mode)")
