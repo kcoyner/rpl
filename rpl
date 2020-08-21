@@ -369,10 +369,14 @@ for filename, perms in get_files(files, args.verbose):
     block = b''
     if encoding is None:
         detector = UniversalDetector()
-        next_block = f.read(io.DEFAULT_BUFFER_SIZE)
-        if len(next_block) != 0:
+        scanned_bytes = 0
+        while scanned_bytes < 1024*1024:
+            next_block = f.read(io.DEFAULT_BUFFER_SIZE)
+            if len(next_block) == 0: break
+            scanned_bytes += len(next_block)
             block += next_block
             detector.feed(next_block)
+            if detector.done: break
         f = io.BufferedReader(ChainStream([io.BytesIO(block), f]))
 
         detector.close()
