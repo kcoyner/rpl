@@ -144,7 +144,7 @@ def caselike(model, string):
             string = string.upper()
     return string
 
-def replace(instream, outstream, regex, before, after, encoding):
+def replace(instream, outstream, regex, before, after, encoding, filename):
     patlen = len(before)
     sum = 0
 
@@ -173,7 +173,7 @@ def replace(instream, outstream, regex, before, after, encoding):
         finally:
             if err is not None:
                 if isinstance(err, UnicodeError):
-                    warn("decoding error ({})".format(err.reason))
+                    warn("{}: decoding error ({})".format(filename, err.reason))
                 else:
                     warn("decoding error")
                 warn("you could try specifying the encoding using the --encoding option")
@@ -389,7 +389,7 @@ for filename, perms in get_files(files, args.verbose):
                 warn("Could not guess encoding; using locale default '{}'".format(encoding))
 
     # Do the actual work now
-    matches = replace(f, o, regex, old_str, new_str, encoding)
+    matches = replace(f, o, regex, old_str, new_str, encoding, filename)
 
     f.close()
     o.close()
