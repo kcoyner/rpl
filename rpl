@@ -281,7 +281,6 @@ if not args.noglob:
     for file in list(map(os.path.expanduser, map(os.path.expandvars, files))):
         globbed_files += glob.glob(file, recursive=True)
     files = globbed_files
-print(files)
 
 # See if all the files actually exist
 for file in files:
