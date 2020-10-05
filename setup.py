@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from setuptools import setup
+from distutils.core import setup
 
 long_description = open('README.md').read()
 
@@ -13,6 +13,7 @@ setup(name='rpl',
       url='https://github.com/rrthomas/rpl',
       license='GPL v3 or later',
       scripts=['rpl'],
+      data_files=[('share/man/man1', ['rpl.1'])],
       install_requires=['chardet'],
       classifiers=[
           'Environment :: Console',
