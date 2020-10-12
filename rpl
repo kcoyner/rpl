@@ -172,7 +172,7 @@ def replace(instream, outstream, regex, before, after, encoding, filename):
                     warn("{}: decoding error ({})".format(filename, err.reason))
                 else:
                     warn("decoding error")
-                warn("you could try specifying the encoding using the --encoding option")
+                warn("you can specify the encoding with --encoding")
                 return 0
 
         parts = regex.split(tonext + block)
