@@ -369,6 +369,8 @@ for filename, perms in get_files(files, args.verbose):
     if encoding is None:
         detector = UniversalDetector()
         scanned_bytes = 0
+        # Scan at most 1MB, so we don't give up too soon, but don't slurp a
+        # large file.
         while scanned_bytes < 1024*1024:
             next_block = f.read(io.DEFAULT_BUFFER_SIZE)
             if len(next_block) == 0: break
