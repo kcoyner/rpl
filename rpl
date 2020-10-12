@@ -29,7 +29,7 @@ from warnings import warn
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.7.2"
+VERSION = "1.8rc1"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file)
@@ -176,22 +176,19 @@ def replace(instream, outstream, regex, before, after, encoding, filename):
                 return 0
 
         parts = regex.split(tonext + block)
-        sum += len(parts) // 2
-        lastpart = parts[-1]
-        if lastpart:
-            tonext = lastpart[-patlen:]
-            parts[-1] = lastpart[:-len(tonext)]
-        else:
-            tonext = u''
+        sum += len(parts) // (1 + regex.groups)
+        tonext = parts[-1] or u''
 
-        for i in range(1, len(parts), 2):
-            if parts[i] != '':
-                replace = after
+        results = []
+        for i in range(0, len(parts) - regex.groups, 1 + regex.groups):
+            results.append(parts[i])
+            if parts[i + 1] != '':
+                replace = re.sub(before, after, parts[i + 1])
                 if args.ignore_case == "match":
-                    replace = caselike(parts[i], after)
-                parts[i] = replace
+                    replace = caselike(parts[i + 1], replace)
+                results.append(replace)
 
-        joined_parts = ''.join(parts)
+        joined_parts = ''.join(results)
         outstream.write(joined_parts.encode(encoding=encoding))
 
     outstream.write(tonext.encode(encoding=encoding))
@@ -230,7 +227,7 @@ parser.add_argument("-m", "--match-case",
 
 parser.add_argument("-w", "--whole-words",
                     action="store_true",
-                    help="whole words (OLD-TEXT matches on word boundaries only)")
+                    help="whole words (REGEX matches on word boundaries only)")
 
 parser.add_argument("-b", "--backup",
                     action="store_true",
@@ -250,7 +247,11 @@ parser.add_argument("-s", "--dry-run",
 
 parser.add_argument("-e", "--escape",
                     action="store_true",
-                    help="expand escapes in OLD-TEXT and NEW-TEXT")
+                    help="expand escapes in REGEX and REPLACEMENT [deprecated]")
+
+parser.add_argument("-l", "--literal",
+                    action="store_true",
+                    help="treat REGEX and REPLACEMENT as literal text")
 
 parser.add_argument("--noglob",
                     action="store_true",
@@ -268,8 +269,8 @@ parser.add_argument("-d", "--keep-times",
                     action="store_true",
                     help="keep the modification times on modified files")
 
-parser.add_argument('old_str', metavar='OLD-TEXT')
-parser.add_argument('new_str', metavar='NEW-TEXT')
+parser.add_argument('old_str', metavar='REGEX')
+parser.add_argument('new_str', metavar='REPLACEMENT')
 parser.add_argument('file', metavar='FILE', nargs='+')
 
 args = parser.parse_args()
@@ -313,10 +314,15 @@ if args.escape:
     old_str = unescape(old_str)
     new_str = unescape(new_str)
 
-regex_str = re.escape(old_str)
+if args.literal:
+    old_str = re.escape(old_str)
+    new_str = re.escape(new_str)
+
+regex_str = old_str
 if args.whole_words:
     regex_str = r"\b" + regex_str + r"\b"
-regex = re.compile(r"(" + regex_str + r")", re.I if args.ignore_case else 0)
+# Call re.compile so we get an error if the regex is invalid, & count groups.
+regex = re.compile("(" + regex_str + ")", re.I if args.ignore_case else 0)
 
 total_files = 0
 total_matches = 0
