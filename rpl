@@ -29,7 +29,7 @@ from warnings import warn
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.8rc1"
+VERSION = "1.8rc2"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file)
@@ -249,9 +249,9 @@ parser.add_argument("-e", "--escape",
                     action="store_true",
                     help="expand escapes in REGEX and REPLACEMENT [deprecated]")
 
-parser.add_argument("-l", "--literal",
+parser.add_argument("-F", "--fixed-strings",
                     action="store_true",
-                    help="treat REGEX and REPLACEMENT as literal text")
+                    help="treat REGEX and REPLACEMENT as fixed strings, not regular expressions")
 
 parser.add_argument("--noglob",
                     action="store_true",
