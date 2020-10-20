@@ -316,7 +316,7 @@ if args.escape:
 
 if args.fixed_strings:
     old_str = re.escape(old_str)
-    new_str = re.escape(new_str)
+    new_str = new_str.replace('\\', r'\\')
 
 regex_str = old_str
 if args.whole_words:
