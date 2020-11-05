@@ -227,7 +227,7 @@ parser.add_argument("-m", "--match-case",
 
 parser.add_argument("-w", "--whole-words",
                     action="store_true",
-                    help="whole words (REGEX matches on word boundaries only)")
+                    help="whole words (OLD-TEXT matches on word boundaries only)")
 
 parser.add_argument("-b", "--backup",
                     action="store_true",
@@ -247,11 +247,11 @@ parser.add_argument("-s", "--dry-run",
 
 parser.add_argument("-e", "--escape",
                     action="store_true",
-                    help="expand escapes in REGEX and REPLACEMENT [deprecated]")
+                    help="expand escapes in OLD-TEXT and NEW-TEXT [deprecated]")
 
 parser.add_argument("-F", "--fixed-strings",
                     action="store_true",
-                    help="treat REGEX and REPLACEMENT as fixed strings, not regular expressions")
+                    help="treat OLD-TEXT and NEW-TEXT as fixed strings, not regular expressions")
 
 parser.add_argument("--noglob",
                     action="store_true",
@@ -269,8 +269,8 @@ parser.add_argument("-d", "--keep-times",
                     action="store_true",
                     help="keep the modification times on modified files")
 
-parser.add_argument('old_str', metavar='REGEX')
-parser.add_argument('new_str', metavar='REPLACEMENT')
+parser.add_argument('old_str', metavar='OLD-TEXT')
+parser.add_argument('new_str', metavar='NEW-TEXT')
 parser.add_argument('file', metavar='FILE', nargs='+')
 
 args = parser.parse_args()
