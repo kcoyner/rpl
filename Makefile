@@ -9,6 +9,12 @@ check:
 	( cp lorem.orig.txt lorem.txt; ./rpl -mv lorem loReM lorem.txt; egrep -i lorem lorem.txt && rm lorem.txt || exit 1 ) && \
 	( cp lorem.orig.txt lorem.txt; ./rpl -v 'a[a-z]+' 'coffee' lorem.txt; egrep -i "coffee elit" lorem.txt && rm lorem.txt || exit 1 )
 
+release:
+	rm -rf ./dist
+	mkdir dist
+	python3 setup.py sdist bdist_wheel
+	twine upload dist/*
+
 clean:
 	rm -f rpl.1
 
