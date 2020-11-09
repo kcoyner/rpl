@@ -89,6 +89,14 @@ class ChainStream(io.RawIOBase):
         return len(output)
 
 
+def slurp(filename):
+    """Read a file into a string, aborting on error."""
+    try:
+        return open(filename).read()
+    except IOError as e:
+        warn("Could not read file {}".format(filename))
+        sys.exit(os.EX_DATAERR)
+
 def get_files(filenames, verbose):
     """Yield (filename, permissions) pairs."""
     for filename in filenames:
@@ -253,6 +261,10 @@ parser.add_argument("-F", "--fixed-strings",
                     action="store_true",
                     help="treat OLD-TEXT and NEW-TEXT as fixed strings, not regular expressions")
 
+parser.add_argument("--files",
+                    action="store_true",
+                    help="OLD-TEXT and NEW-TEXT are file names to read patterns from")
+
 parser.add_argument("--noglob",
                     action="store_true",
                     help="disable globbing and other expansions")
@@ -289,8 +301,12 @@ for file in files:
         warn("File \"{}\" not found".format(file))
         sys.exit(os.EX_DATAERR)
 
-old_str = args.old_str
-new_str = args.new_str
+if args.files:
+    old_str = slurp(args.old_str)
+    new_str = slurp(args.new_str)
+else:
+    old_str = args.old_str
+    new_str = args.new_str
 
 # Tell the user what is going to happen
 if not args.quiet:
