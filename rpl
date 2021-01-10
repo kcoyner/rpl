@@ -191,7 +191,7 @@ def replace(instream, outstream, regex, before, after, encoding, filename):
         for i in range(0, len(parts) - regex.groups, 1 + regex.groups):
             results.append(parts[i])
             if parts[i + 1] != '':
-                replace = re.sub(before, after, parts[i + 1])
+                replace = regex.sub(after, parts[i + 1])
                 if args.ignore_case == "match":
                     replace = caselike(parts[i + 1], replace)
                 results.append(replace)
