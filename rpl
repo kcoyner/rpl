@@ -29,7 +29,7 @@ from warnings import warn
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.8.0"
+VERSION = "1.8.1"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file)
@@ -213,7 +213,7 @@ Copyright (C) 2004-2005 Göran Weinholt <weinholt@debian.org>
 Copyright (C) 2004 Christian Häggström <chm@c00.info>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
 Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
-Copyright (C) 2018-2020 Reuben Thomas <rrt@sc3d.org>
+Copyright (C) 2018-2021 Reuben Thomas <rrt@sc3d.org>
 
 %(prog)s comes with ABSOLUTELY NO WARRANTY.
 You may redistribute copies of %(prog)s under the terms of the
