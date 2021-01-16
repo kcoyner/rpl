@@ -1,0 +1,31 @@
+/Search and replace/
+Text matching the pattern \fIOLD-TEXT\fR is replaced by \fINEW-TEXT\fR in each \fIFILE\fR.
+
+Filenames may include glob patterns (these must be quoted to
+avoid being interpreted by the shell), and in particular may use ‘\fI**\fR’ to
+match all files and zero or more directories and subdirectories. Tilde and
+environment variable expansion is also performed.
+
+[examples]
+Replace all occurrences of the word ‘F’ with ‘A’
+in all files with extension \fI.txt\fR under the
+.I grades/
+directory:
+.PP
+.nf
+.RS
+rpl \-w F A 'grades/**/*.txt'
+.RE
+
+[>copyright]
+.PP
+This program was written for Debian as a free replacement for the non-free
+.B rpl
+program by Joe Laffey.
+
+[see also]
+.BR find (1) ,
+.BR sed (1) .
+
+[author]
+Written by G\[:o]ran Weinholt and Reuben Thomas.
