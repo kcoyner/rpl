@@ -179,8 +179,8 @@ def replace(instream, outstream, regex, before, after, encoding, filename):
                 if isinstance(err, UnicodeError):
                     warn("{}: decoding error ({})".format(filename, err.reason))
                 else:
-                    warn("decoding error")
-                warn("you can specify the encoding with --encoding")
+                    warn("Decoding error")
+                warn("You can specify the encoding with --encoding")
                 return 0
 
         parts = regex.split(tonext + block)
