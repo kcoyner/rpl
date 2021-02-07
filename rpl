@@ -32,7 +32,7 @@ from chardet.universaldetector import UniversalDetector
 VERSION = "1.8.1"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
-    print("\n{}: {}".format(parser.prog, msg), file=file)
+    print("\n{}: {}".format(parser.prog, msg), file=file or sys.stderr)
 warnings.showwarning = simple_warning
 
 
