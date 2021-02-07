@@ -294,13 +294,11 @@ if not args.noglob:
     for file in list(map(os.path.expanduser, map(os.path.expandvars, files))):
         globbed_files += glob.glob(file, recursive=True)
     files = globbed_files
+    if len(files) == 0:
+        warn("The given filename patterns did not match any files!")
+        sys.exit(1)
 
-# See if all the files actually exist
-for file in files:
-    if not os.path.exists(file):
-        warn("File \"{}\" not found".format(file))
-        sys.exit(os.EX_DATAERR)
-
+# Get old and new text patterns
 if args.files:
     old_str = slurp(args.old_str)
     new_str = slurp(args.new_str)
