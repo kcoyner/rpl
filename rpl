@@ -97,24 +97,6 @@ def slurp(filename):
         warn("Could not read file {}".format(filename))
         sys.exit(os.EX_DATAERR)
 
-def get_files(filenames, verbose):
-    """Yield (filename, permissions) pairs."""
-    for filename in filenames:
-        try:
-            perms = os.lstat(filename)
-        except OSError as e:
-            warn("Skipping {}: unable to read permissions ({})".format(filename, e))
-            continue
-
-        if S_ISDIR(perms.st_mode):
-            if verbose:
-                warn("Skipping directory {}".format(filename))
-            continue
-        elif S_ISREG(perms.st_mode):
-            yield filename, perms
-        else:
-            warn("Skipping: {} (not a regular file)".format(filename))
-
 
 def unescape(s):
     regex = re.compile(r'\\([0-7]{1,3}|x[0-9a-fA-F]{2}|[nrtvafb\\])')
@@ -283,13 +265,17 @@ parser.add_argument("-d", "--keep-times",
 
 parser.add_argument('old_str', metavar='OLD-TEXT')
 parser.add_argument('new_str', metavar='NEW-TEXT')
-parser.add_argument('file', metavar='FILE', nargs='+')
+parser.add_argument('file', metavar='FILE', nargs='*',
+                    help="`-' or no FILE argument means standard input")
 
 args = parser.parse_args()
 files = args.file
 
-# Perform globbing and tilde and variable expansion, if desired.
-if not args.noglob:
+# If no files given, assume stdin
+if len(files) == 0:
+    files = ["-"]
+elif not args.noglob:
+    # Perform globbing and tilde and variable expansion, if desired.
     globbed_files = []
     for file in list(map(os.path.expanduser, map(os.path.expandvars, files))):
         globbed_files += glob.glob(file, recursive=True)
@@ -340,40 +326,63 @@ regex = re.compile("(" + regex_str + ")", re.I if args.ignore_case else 0)
 
 total_files = 0
 total_matches = 0
-for filename, perms in get_files(files, args.verbose):
+for filename in files:
+    perms = None
+    if filename == "-":
+        filename = "standard input"
+        # Access stdin and stdout as binary.
+        f = sys.stdin.buffer
+        o = sys.stdout.buffer
+        tmp_path = None
+    else:
+        # Check `filename` is a regular file, and get its permissions
+        try:
+            perms = os.lstat(filename)
+        except OSError as e:
+            warn("Skipping {}: unable to read permissions ({})".format(filename, e))
+            continue
+        if S_ISDIR(perms.st_mode):
+            if verbose:
+                warn("Skipping directory {}".format(filename))
+            continue
+        elif not S_ISREG(perms.st_mode):
+            warn("Skipping: {} (not a regular file)".format(filename))
+            continue
+
+        # Open the input file
+        try:
+            f = open(filename, "rb")
+        except IOError as e:
+            warn("Skipping {}: cannot open for reading; error: {}".format(filename, e))
+            continue
+
+        # Create the output file
+        try:
+            o, tmp_path = tempfile.mkstemp("", ".tmp.")
+            o = os.fdopen(o, "wb")
+        except OSError as e:
+            warn("Skipping {}: cannot create temp file; error: {}".format(filename, e))
+            continue
+
+        # Set permissions and owner
+        if perms is not None:
+            try:
+                os.chown(tmp_path, perms.st_uid, perms.st_gid)
+                os.chmod(tmp_path, perms.st_mode)
+            except OSError as e:
+                warn("Unable to set attributes of {}; error: {}".format(filename, e))
+                if args.force:
+                    warn("New file attributes may not match!")
+                else:
+                    warn("Skipping {}!".format(filename))
+                    os.unlink(tmp_path)
+                    continue
+
     total_files += 1
 
     # If no encoding specified, reset guess for each file
     if not args.encoding:
         encoding = None
-
-    # Open the input file
-    try:
-        f = open(filename, "rb")
-    except IOError as e:
-        warn("Skipping {}: cannot open for reading; error: {}".format(filename, e))
-        continue
-
-    # Create the output file
-    try:
-        o, tmp_path = tempfile.mkstemp("", ".tmp.")
-        o = os.fdopen(o, "wb")
-    except OSError as e:
-        warn("Skipping {}: cannot create temp file; error: {}".format(filename, e))
-        continue
-
-    # Set permissions and owner
-    try:
-        os.chown(tmp_path, perms.st_uid, perms.st_gid)
-        os.chmod(tmp_path, perms.st_mode)
-    except OSError as e:
-        warn("Unable to set attributes of {}; error: {}".format(filename, e))
-        if args.force:
-            warn("New file attributes may not match!")
-        else:
-            warn("Skipping {}!".format(filename))
-            os.unlink(tmp_path)
-            continue
 
     if args.verbose and not args.dry_run:
         warn("Processing: {}".format(filename))
@@ -414,19 +423,23 @@ for filename, perms in get_files(files, args.verbose):
     o.close()
 
     if matches == 0:
-        os.unlink(tmp_path)
+        if tmp_path is not None:
+            os.unlink(tmp_path)
         continue
 
     if args.dry_run:
-        try:
-            fn = os.path.realpath(filename)
-        except OSError as e:
+        if tmp_path is None:
             fn = filename
+        else:
+            try:
+                fn = os.path.realpath(filename)
+            except OSError as e:
+                fn = filename
+            os.unlink(tmp_path)
 
         if not args.quiet:
             print("  {}".format(fn), file=sys.stderr)
 
-        os.unlink(tmp_path)
         total_matches += matches
         continue
 
@@ -439,34 +452,37 @@ for filename, perms in get_files(files, args.verbose):
 
         if line[0] in "nN":
             print("Not saved", file=sys.stderr)
-            os.unlink(tmp_path)
+            if tmp_path is not None:
+                os.unlink(tmp_path)
             continue
 
         print("Saved", file=sys.stderr)
 
-    if args.backup:
+    if tmp_path is not None:
+        if args.backup:
+            try:
+                shutil.move(filename, filename + "~")
+            except OSError as e:
+                warn("Error renaming {} to {}:".format(filename, filename + "~", e))
+                continue
+
+        # Rename the file
         try:
-            shutil.move(filename, filename + "~")
+            shutil.move(tmp_path, filename)
         except OSError as e:
-            warn("Error renaming {} to {}:".format(filename, filename + "~", e))
+            warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
+            os.unlink(tmp_path)
             continue
 
-    # Rename the file
-    try:
-        shutil.move(tmp_path, filename)
-    except OSError as e:
-        warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
-        os.unlink(tmp_path)
-        continue
-
-    # Restore the times
-    if args.keep_times:
-        try:
-            os.utime(filename, (perms.st_atime, perms.st_mtime))
-        except OSError as e:
-            warn("Error setting timestamps of {}: {}".format(filename, e))
+        # Restore the times
+        if args.keep_times:
+            try:
+                os.utime(filename, (perms.st_atime, perms.st_mtime))
+            except OSError as e:
+                warn("Error setting timestamps of {}: {}".format(filename, e))
 
     total_matches += matches
+
 
 # We're about to exit, give a summary
 if not args.quiet:
