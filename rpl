@@ -35,6 +35,10 @@ def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file or sys.stderr)
 warnings.showwarning = simple_warning
 
+def die(code, msg):
+    warn(msg)
+    sys.exit(code)
+
 
 # Adapted from: https://stackoverflow.com/questions/24528278/stream-multiple-files-into-a-readable-object-in-python
 # Note: the original code is licensed under CC-BY-SA 3.0, which is
@@ -94,8 +98,7 @@ def slurp(filename):
     try:
         return open(filename).read()
     except IOError as e:
-        warn("Could not read file {}".format(filename))
-        sys.exit(os.EX_DATAERR)
+        die(os_EX_DATAERR, "Could not read file {}".format(filename))
 
 
 def unescape(s):
@@ -281,8 +284,7 @@ elif not args.noglob:
         globbed_files += glob.glob(file, recursive=True)
     files = globbed_files
     if len(files) == 0:
-        warn("The given filename patterns did not match any files!")
-        sys.exit(1)
+        die(1, "The given filename patterns did not match any files!")
 
 # Get old and new text patterns
 if args.files:
