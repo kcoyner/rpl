@@ -208,6 +208,10 @@ For more information about these matters, see the file named COPYING.''')
 parser.add_argument("--encoding", metavar="ENCODING",
                     help="specify character set encoding")
 
+parser.add_argument("-E", "--extended-regex",
+                    action="store_true",
+                    help="use extended regular expression module `regex'")
+
 parser.add_argument("-i", "--ignore-case",
                     action="store_true",
                     help="search case-insensitively")
@@ -273,6 +277,13 @@ parser.add_argument('file', metavar='FILE', nargs='*',
 
 args = parser.parse_args()
 files = args.file
+
+# Use `regex' module if desired
+if args.extended_regex:
+    try:
+        import regex as re
+    except:
+        die(1, "Could not load `regex' module")
 
 # If no files given, assume stdin
 if len(files) == 0:
