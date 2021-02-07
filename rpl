@@ -275,7 +275,7 @@ parser.add_argument("-p", "--prompt",
 
 parser.add_argument("-f", "--force",
                     action="store_true",
-                    help="ignore errors when trying to preserve permissions")
+                    help="ignore errors when trying to preserve attributes")
 
 parser.add_argument("-d", "--keep-times",
                     action="store_true",
@@ -369,11 +369,11 @@ for filename, perms in get_files(files, args.verbose):
         os.chown(tmp_path, perms.st_uid, perms.st_gid)
         os.chmod(tmp_path, perms.st_mode)
     except OSError as e:
-        warn("Unable to set owner/group/perms of {}; error: {}".format(filename, e))
+        warn("Unable to set attributes of {}; error: {}".format(filename, e))
         if args.force:
-            warn("New owner/group/perms may not match!\n")
+            warn("New file attributes may not match!")
         else:
-            warn("Skipping {}!\n".format(filename))
+            warn("Skipping {}!".format(filename))
             os.unlink(tmp_path)
             continue
 
