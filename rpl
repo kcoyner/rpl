@@ -29,7 +29,7 @@ from warnings import warn
 from chardet.universaldetector import UniversalDetector
 
 
-VERSION = "1.9rc2"
+VERSION = "1.9rc3"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
     print("\n{}: {}".format(parser.prog, msg), file=file or sys.stderr)
@@ -355,7 +355,7 @@ for filename in files:
             warn("Skipping {}: unable to read permissions ({})".format(filename, e))
             continue
         if S_ISDIR(perms.st_mode):
-            if verbose:
+            if args.verbose:
                 warn("Skipping directory {}".format(filename))
             continue
         elif not S_ISREG(perms.st_mode):
