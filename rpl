@@ -133,7 +133,7 @@ def caselike(model, string):
             string = string.upper()
     return string
 
-def replace(instream, outstream, regex, before, after, encoding, filename):
+def replace(instream, outstream, regex, split_regex, before, after, encoding, filename):
     patlen = len(before)
     sum = 0
 
@@ -168,12 +168,12 @@ def replace(instream, outstream, regex, before, after, encoding, filename):
                 warn("You can specify the encoding with --encoding")
                 return 0
 
-        parts = regex.split(tonext + block)
-        sum += len(parts) // (1 + regex.groups)
+        parts = split_regex.split(tonext + block)
+        sum += len(parts) // (1 + split_regex.groups)
         tonext = parts[-1] or u''
 
         results = []
-        for i in range(0, len(parts) - regex.groups, 1 + regex.groups):
+        for i in range(0, len(parts) - split_regex.groups, 1 + split_regex.groups):
             results.append(parts[i])
             if parts[i + 1] != '':
                 replace = regex.sub(after, parts[i + 1])
@@ -335,7 +335,8 @@ regex_str = old_str
 if args.whole_words:
     regex_str = r"\b" + regex_str + r"\b"
 # Call re.compile so we get an error if the regex is invalid, & count groups.
-regex = re.compile("(" + regex_str + ")", re.I if args.ignore_case else 0)
+regex = re.compile(regex_str, re.I if args.ignore_case else 0)
+split_regex = re.compile(f"({regex_str})", re.I if args.ignore_case else 0)
 
 total_files = 0
 total_matches = 0
@@ -430,7 +431,7 @@ for filename in files:
                 warn("Could not guess encoding; using locale default '{}'".format(encoding))
 
     # Do the actual work now
-    matches = replace(f, o, regex, old_str, new_str, encoding, filename)
+    matches = replace(f, o, regex, split_regex, old_str, new_str, encoding, filename)
 
     f.close()
     o.close()
