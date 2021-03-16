@@ -339,6 +339,7 @@ regex = re.compile(regex_str, re.I if args.ignore_case else 0)
 split_regex = re.compile(f"({regex_str})", re.I if args.ignore_case else 0)
 
 total_files = 0
+matched_files = 0
 total_matches = 0
 for filename in files:
     perms = None
@@ -440,6 +441,8 @@ for filename in files:
         if tmp_path is not None:
             os.unlink(tmp_path)
         continue
+    else:
+        matched_files += 1
 
     if args.dry_run:
         if tmp_path is None:
@@ -500,9 +503,10 @@ for filename in files:
 
 # We're about to exit, give a summary
 if not args.quiet:
-    warn("{} matches {} in {} file{}".format(
+    warn("{} matches {} in {} out of {} file{}".format(
         total_matches,
         "found" if args.dry_run else "replaced",
+        matched_files,
         total_files,
         "s" if total_files != 1 else "",
     ))
