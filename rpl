@@ -20,7 +20,7 @@ import io
 import re
 import shutil
 from stat import S_ISDIR, S_ISREG
-import glob
+from pathlib import Path
 import sys
 import tempfile
 import warnings
@@ -254,9 +254,13 @@ parser.add_argument("--files",
                     action="store_true",
                     help="OLD-TEXT and NEW-TEXT are file names to read patterns from")
 
-parser.add_argument("--noglob",
+parser.add_argument("-x", "--glob",
+                    action="append",
+                    help="modify only files matching the given glob (may be given more than once)")
+
+parser.add_argument("-R", "--recursive",
                     action="store_true",
-                    help="disable globbing and other expansions")
+                    help="search recursively")
 
 parser.add_argument("-p", "--prompt",
                     action="store_true",
@@ -288,12 +292,16 @@ if args.extended_regex:
 # If no files given, assume stdin
 if len(files) == 0:
     files = ["-"]
-elif not args.noglob:
-    # Perform globbing and tilde and variable expansion, if desired.
-    globbed_files = []
-    for file in list(map(os.path.expanduser, map(os.path.expandvars, files))):
-        globbed_files += glob.glob(file, recursive=True)
-    files = globbed_files
+else:
+    expanded_files = []
+    for file in files:
+        for glob in args.glob or ['']:
+            print(glob)
+            if args.recursive:
+                expanded_files += Path(file).rglob(glob)
+            else:
+                expanded_files += Path(file).glob(glob)
+    files = expanded_files
     if len(files) == 0:
         die(1, "The given filename patterns did not match any files!")
 
