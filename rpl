@@ -256,7 +256,8 @@ parser.add_argument("--files",
 
 parser.add_argument("-x", "--glob",
                     action="append",
-                    help="modify only files matching the given glob (may be given more than once)")
+                    help="modify only files matching the given glob (may be given more than once)",
+                    default='*')
 
 parser.add_argument("-R", "--recursive",
                     action="store_true",
@@ -295,12 +296,11 @@ if len(files) == 0:
 else:
     expanded_files = []
     for file in files:
-        for glob in args.glob or ['']:
-            print(glob)
-            if args.recursive:
+        for glob in args.glob:
+            if args.recursive and os.path.isdir(file):
                 expanded_files += Path(file).rglob(glob)
-            else:
-                expanded_files += Path(file).glob(glob)
+            elif Path(file) in Path(os.path.dirname(file)).glob(glob):
+                expanded_files.append(file)
     files = expanded_files
     if len(files) == 0:
         die(1, "The given filename patterns did not match any files!")
