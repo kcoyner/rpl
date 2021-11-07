@@ -10,10 +10,13 @@ check:
 	( ./rpl -v 'a[a-z]+' 'coffee' < lorem.txt | egrep -i "coffee elit" || exit 1 )
 
 release:
-	rm -rf ./dist
-	mkdir dist
-	python3 setup.py sdist bdist_wheel
-	twine upload dist/*
+	git diff --exit-code && \
+	rm -rf ./dist && \
+	mkdir dist && \
+	python3 setup.py sdist bdist_wheel && \
+	twine upload dist/* && \
+	git tag v$$(python3 setup.py --version) && \
+	git push --tags
 
 clean:
 	rm -f rpl.1
