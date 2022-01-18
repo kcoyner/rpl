@@ -256,8 +256,7 @@ parser.add_argument("--files",
 
 parser.add_argument("-x", "--glob",
                     action="append",
-                    help="modify only files matching the given glob (may be given more than once)",
-                    default='*')
+                    help="modify only files matching the given glob (may be given more than once)")
 
 parser.add_argument("-R", "--recursive",
                     action="store_true",
@@ -282,6 +281,10 @@ parser.add_argument('file', metavar='FILE', nargs='*',
 
 args = parser.parse_args()
 files = args.file
+
+# If no --glob arguments given, use a match-all glob
+if args.glob == None:
+    args.glob = ['*']
 
 # Use `regex' module if desired
 if args.extended_regex:
