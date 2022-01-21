@@ -347,8 +347,11 @@ if args.whole_words:
     regex_str = r"\b" + regex_str + r"\b"
 # Call re.compile so we get an error if the regex is invalid, & count groups.
 opts = re.M + (re.I if args.ignore_case else 0)
-regex = re.compile(regex_str, opts)
-split_regex = re.compile(f"({regex_str})", opts)
+try:
+    regex = re.compile(regex_str, opts)
+    split_regex = re.compile(f"({regex_str})", opts)
+except re.error as e:
+    die(1, f"Bad regex {old_str} ({e.msg})")
 
 total_files = 0
 matched_files = 0
