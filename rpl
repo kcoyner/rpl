@@ -98,7 +98,7 @@ def slurp(filename):
     try:
         return Path(filename).read_text()
     except IOError as e:
-        die(os_EX_DATAERR, "Could not read file {}".format(filename))
+        die(os.EX_DATAERR, "Could not read file {}".format(filename))
 
 
 def unescape(s):
