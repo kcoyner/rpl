@@ -32,7 +32,7 @@ from chardet.universaldetector import UniversalDetector
 VERSION = "1.13"
 
 def simple_warning(msg, cat, filename, lineno, file, line):
-    print("\n{}: {}".format(parser.prog, msg), file=file or sys.stderr)
+    print(f"\n{parser.prog}: {msg}", file=file or sys.stderr)
 warnings.showwarning = simple_warning
 
 def die(code, msg):
@@ -98,7 +98,7 @@ def slurp(filename):
     try:
         return Path(filename).read_text()
     except IOError as e:
-        die(os.EX_DATAERR, "Could not read file {}".format(filename))
+        die(os.EX_DATAERR, f"Could not read file {filename}")
 
 
 def unescape(s):
@@ -162,7 +162,7 @@ def replace(instream, outstream, regex, split_regex, before, after, encoding, fi
         finally:
             if err is not None:
                 if isinstance(err, UnicodeError):
-                    warn("{}: decoding error ({})".format(filename, err.reason))
+                    warn(f"{filename}: decoding error ({err.reason})")
                 else:
                     warn("Decoding error")
                 warn("You can specify the encoding with --encoding")
@@ -369,21 +369,21 @@ for filename in files:
         try:
             perms = os.lstat(filename)
         except OSError as e:
-            warn("Skipping {}: unable to read permissions ({})".format(filename, e))
+            warn(f"Skipping {filename}: unable to read permissions; error: {e}")
             continue
         if S_ISDIR(perms.st_mode):
             if args.verbose:
-                warn("Skipping directory {}".format(filename))
+                warn(f"Skipping directory {filename}")
             continue
         elif not S_ISREG(perms.st_mode):
-            warn("Skipping: {} (not a regular file)".format(filename))
+            warn(f"Skipping: {filename} (not a regular file)")
             continue
 
         # Open the input file
         try:
             f = open(filename, "rb")
         except IOError as e:
-            warn("Skipping {}: cannot open for reading; error: {}".format(filename, e))
+            warn(f"Skipping {filename}: cannot open for reading; error: {e}")
             continue
 
         # Create the output file
@@ -391,7 +391,7 @@ for filename in files:
             o, tmp_path = tempfile.mkstemp("", ".tmp.")
             o = os.fdopen(o, "wb")
         except OSError as e:
-            warn("Skipping {}: cannot create temp file; error: {}".format(filename, e))
+            warn(f"Skipping {filename}: cannot create temp file; error: {e}")
             continue
 
         # Set permissions and owner
@@ -400,11 +400,11 @@ for filename in files:
                 os.chown(tmp_path, perms.st_uid, perms.st_gid)
                 os.chmod(tmp_path, perms.st_mode)
             except OSError as e:
-                warn("Unable to set attributes of {}; error: {}".format(filename, e))
+                warn(f"Unable to set attributes of {filename}; error: {e}")
                 if args.force:
                     warn("New file attributes may not match!")
                 else:
-                    warn("Skipping {}!".format(filename))
+                    warn(f"Skipping {filename}!")
                     os.unlink(tmp_path)
                     continue
 
@@ -415,7 +415,7 @@ for filename in files:
         encoding = None
 
     if args.verbose and not args.dry_run:
-        warn("Processing: {}".format(filename))
+        warn(f"Processing: {filename}")
 
     # If we don't have an explicit encoding, guess
     block = b''
@@ -438,13 +438,13 @@ for filename in files:
             encoding = detector.result['encoding']
             if args.verbose:
                 if encoding is not None:
-                    warn("Guessed encoding '{}'".format(encoding))
+                    warn(f"Guessed encoding '{encoding}'")
                 else:
                     warn("Unable to guess encoding")
         if encoding is None:
             encoding = locale.getpreferredencoding(False)
             if args.verbose:
-                warn("Could not guess encoding; using locale default '{}'".format(encoding))
+                warn(f"Could not guess encoding; using locale default '{encoding}'")
 
     # Do the actual work now
     matches = replace(f, o, regex, split_regex, old_str, new_str, encoding, filename)
@@ -470,13 +470,13 @@ for filename in files:
             os.unlink(tmp_path)
 
         if not args.quiet:
-            print("  {}".format(fn), file=sys.stderr)
+            print(f"  {fn}", file=sys.stderr)
 
         total_matches += matches
         continue
 
     if args.prompt:
-        print("\nSave \"{}\"? ([Y]/N) ".format(filename), file=sys.stderr, end='')
+        print(f"\nSave \"{filename}\"? ([Y]/N) ", file=sys.stderr, end='')
 
         line = ""
         while line == "" or line[0] not in "Yy\nnN":
@@ -495,14 +495,14 @@ for filename in files:
             try:
                 shutil.move(filename, filename + "~")
             except OSError as e:
-                warn("Error renaming {} to {}:".format(filename, filename + "~", e))
+                warn(f"Error renaming {filename} to {filename + '~'}; error: {e}")
                 continue
 
         # Rename the file
         try:
             shutil.move(tmp_path, filename)
         except OSError as e:
-            warn("Could not replace {} with {}; error: {}".format(tmp_path, filename, e))
+            warn(f"Could not replace {tmp_path} with {filename}; error: {e}")
             os.unlink(tmp_path)
             continue
 
@@ -511,7 +511,7 @@ for filename in files:
             try:
                 os.utime(filename, (perms.st_atime, perms.st_mtime))
             except OSError as e:
-                warn("Error setting timestamps of {}: {}".format(filename, e))
+                warn(f"Error setting timestamps of {filename}: {e}")
 
     total_matches += matches
 
