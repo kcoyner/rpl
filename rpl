@@ -96,7 +96,7 @@ class ChainStream(io.RawIOBase):
 def slurp(filename):
     """Read a file into a string, aborting on error."""
     try:
-        return open(filename).read()
+        return Path(filename).read_text()
     except IOError as e:
         die(os_EX_DATAERR, "Could not read file {}".format(filename))
 
