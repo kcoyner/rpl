@@ -194,7 +194,7 @@ parser = argparse.ArgumentParser(description="Search and replace text in files."
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--version', action='version',
                     version="%(prog)s " + VERSION + '''
-Copyright (C) 2018-2021 Reuben Thomas <rrt@sc3d.org>
+Copyright (C) 2018-2022 Reuben Thomas <rrt@sc3d.org>
 Copyright (C) 2017 Jochen Kupperschmidt <homework@nwsnet.de>
 Copyright (C) 2016 Kevin Coyner <kcoyner@debian.org>
 Copyright (C) 2004-2005 Göran Weinholt <weinholt@debian.org>
