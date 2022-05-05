@@ -295,6 +295,8 @@ if args.extended_regex:
 
 # If no files given, assume stdin
 if len(files) == 0:
+    if args.recursive:
+        die(1, "Cannot use --recursive with no file arguments!")
     files = ["-"]
 else:
     expanded_files = []
