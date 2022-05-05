@@ -1,6 +1,6 @@
 # Makefile for rpl
 
-all: rpl.1
+all: rpl.1 README.md
 
 check:
 	./rpl --version && \
@@ -23,3 +23,9 @@ clean:
 
 rpl.1: Makefile rpl man-include.1
 	COLUMNS=999 help2man --locale=C.UTF-8 --no-info --name="replace strings in files" --include man-include.1 ./rpl > rpl.1
+
+README.md: rpl README.md.in Makefile
+	cp README.md.in README.md
+	printf '\n```\n' >> README.md
+	./rpl --help >> README.md
+	printf '```\n' >> README.md
