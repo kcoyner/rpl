@@ -13,11 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import locale
 import argparse
 import os
 import io
-import re
 import shutil
 from stat import S_ISDIR, S_ISREG
 from pathlib import Path
@@ -26,16 +27,30 @@ import tempfile
 import warnings
 from warnings import warn
 
+from typing import (
+    List, Optional, Union, Type, NoReturn, cast, TypeAlias, Any,
+    Sized, Pattern, IO, BinaryIO, TextIO, TYPE_CHECKING
+)
+if TYPE_CHECKING:
+    from _typeshed import WriteableBuffer
+import regex
 from chardet.universaldetector import UniversalDetector
 
 
 VERSION = "1.14"
 
-def simple_warning(msg, cat, filename, lineno, file, line):
-    print(f"\n{parser.prog}: {msg}", file=file or sys.stderr)
+def simple_warning(
+        message: Union[Warning, str],
+        category: Type[Warning],
+        filename: str,
+        lineno: int,
+        file: Optional[TextIO] = sys.stderr,
+        line: Optional[str] = None
+) -> None:
+    print(f"\n{parser.prog}: {message}", file)
 warnings.showwarning = simple_warning
 
-def die(code, msg):
+def die(code: int, msg: str) -> NoReturn:
     warn(msg)
     sys.exit(code)
 
@@ -45,7 +60,7 @@ def die(code, msg):
 # upwards-compatible with 4.0, and hence compatible with GPLv3.
 class ChainStream(io.RawIOBase):
     """
-    Chain an iterable of streams together into a single buffered stream.
+    Chain an iterable of IO[bytes] together into a single buffered stream.
     Usage:
         def generate_open_file_streams():
             for file in filenames:
@@ -53,29 +68,32 @@ class ChainStream(io.RawIOBase):
         f = io.BufferedReader(ChainStream(generate_open_file_streams()))
         f.read()
     """
-    def __init__(self, streams):
+    def __init__(self, streams: List[IO[bytes]]):
         self.leftover = b''
         self.stream_iter = iter(streams)
         try:
-            self.stream = next(self.stream_iter)
+            self.stream: Optional[IO[bytes]] = next(self.stream_iter)
         except StopIteration:
             self.stream = None
 
-    def readable(self):
+    def readable(self) -> bool:
         return True
 
-    def _read_next_chunk(self, max_length):
+    def _read_next_chunk(self, max_length: int) -> bytes:
         # Return 0 or more bytes from the current stream, first returning all
         # leftover bytes. If the stream is closed returns b''
         if self.leftover:
             return self.leftover
         elif self.stream is not None:
-            return self.stream.read(max_length)
+            data = self.stream.read(max_length)
+            assert data is not None # FIXME: stream cannot be non-blocking
+            return data
         else:
             return b''
 
-    def readinto(self, b):
-        buffer_length = len(b)
+    def readinto(self, b: WriteableBuffer) -> int:
+        m = memoryview(b) # Allow slicing of the buffer
+        buffer_length = len(m)
         chunk = self._read_next_chunk(buffer_length)
         while len(chunk) == 0:
             # move to next stream
@@ -89,11 +107,11 @@ class ChainStream(io.RawIOBase):
                 self.stream = None
                 return 0  # indicate EOF
         output, self.leftover = chunk[:buffer_length], chunk[buffer_length:]
-        b[:len(output)] = output
+        m[:len(output)] = output
         return len(output)
 
 
-def slurp(filename):
+def slurp(filename: str) -> str:
     """Read a file into a string, aborting on error."""
     try:
         return Path(filename).read_text()
@@ -101,11 +119,11 @@ def slurp(filename):
         die(os.EX_DATAERR, f"Could not read file {filename}")
 
 
-def unescape(s):
-    regex = re.compile(r'\\([0-7]{1,3}|x[0-9a-fA-F]{2}|[nrtvafb\\])')
-    return regex.sub(lambda match: eval('"%s"' % match.group()), s)
+def unescape(s: str) -> str:
+    r = regex.compile(r'\\([0-7]{1,3}|x[0-9a-fA-F]{2}|[nrtvafb\\])')
+    return r.sub(lambda match: cast(str, eval(f'"{match.group()}"')), s)
 
-def casetype(string):
+def casetype(string: str) -> int:
     # Starts with lower case
     case = 0
 
@@ -124,7 +142,7 @@ def casetype(string):
 
     return case
 
-def caselike(model, string):
+def caselike(model: str, string: str) -> str:
     if len(string) > 0:
         case = casetype(model)
         if case == 1:
@@ -133,7 +151,12 @@ def caselike(model, string):
             string = string.upper()
     return string
 
-def replace(instream, outstream, regex, split_regex, before, after, encoding, filename):
+def replace(
+        instream: BinaryIO, outstream: BinaryIO,
+        r: regex.Pattern[str], split_regex: regex.Pattern[str],
+        before: str, after: str,
+        encoding: str, filename: str
+) -> int:
     patlen = len(before)
     sum = 0
 
@@ -146,18 +169,18 @@ def replace(instream, outstream, regex, split_regex, before, after, encoding, fi
 
         try:
             err = None
-            block = block.decode(encoding=encoding)
+            block_str = block.decode(encoding=encoding)
             retry_prefix = b''
-        except ValueError as e:
+        except UnicodeDecodeError as e:
             # Try carrying invalid input over to next iteration in case it's
             # just incomplete
             err = e
             if e.start > 0:
                 retry_prefix = block[e.start:]
                 try:
-                    block = block[:e.start].decode(encoding=encoding)
+                    block_str = block[:e.start].decode(encoding=encoding)
                     err = None
-                except ValueError as e:
+                except UnicodeDecodeError as e:
                     err = e
         finally:
             if err is not None:
@@ -168,7 +191,7 @@ def replace(instream, outstream, regex, split_regex, before, after, encoding, fi
                 warn("You can specify the encoding with --encoding")
                 return 0
 
-        parts = split_regex.split(tonext + block)
+        parts = split_regex.split(tonext + block_str)
         sum += len(parts) // (1 + split_regex.groups)
         tonext = parts[-1] or u''
 
@@ -176,7 +199,7 @@ def replace(instream, outstream, regex, split_regex, before, after, encoding, fi
         for i in range(0, len(parts) - split_regex.groups, 1 + split_regex.groups):
             results.append(parts[i])
             if parts[i + 1] != '':
-                replace = regex.sub(after, parts[i + 1])
+                replace = r.sub(after, parts[i + 1])
                 if args.ignore_case == "match":
                     replace = caselike(parts[i + 1], replace)
                 results.append(replace)
@@ -210,7 +233,7 @@ parser.add_argument("--encoding", metavar="ENCODING",
 
 parser.add_argument("-E", "--extended-regex",
                     action="store_true",
-                    help="use extended regular expression module `regex'")
+                    help=argparse.SUPPRESS)
 
 parser.add_argument("-i", "--ignore-case",
                     action="store_true",
@@ -286,20 +309,13 @@ files = args.file
 if args.glob == None:
     args.glob = ['*']
 
-# Use `regex' module if desired
-if args.extended_regex:
-    try:
-        import regex as re
-    except:
-        die(1, "Could not load `regex' module")
-
 # If no files given, assume stdin
 if len(files) == 0:
     if args.recursive:
         die(1, "Cannot use --recursive with no file arguments!")
     files = ["-"]
 else:
-    expanded_files = []
+    expanded_files: List[Path] = []
     for file in files:
         for glob in args.glob:
             if args.recursive and os.path.isdir(file):
@@ -341,19 +357,19 @@ if args.escape:
     new_str = unescape(new_str)
 
 if args.fixed_strings:
-    old_str = re.escape(old_str)
+    old_str = regex.escape(old_str)
     new_str = new_str.replace('\\', r'\\')
 
 regex_str = old_str
 if args.whole_words:
     regex_str = r"\b" + regex_str + r"\b"
-# Call re.compile so we get an error if the regex is invalid, & count groups.
-opts = re.M + (re.I if args.ignore_case else 0)
+# Call regex.compile so we get an error if the regex is invalid, & count groups.
+opts = regex.M + (regex.I if args.ignore_case else 0)
 try:
-    regex = re.compile(regex_str, opts)
-    split_regex = re.compile(f"({regex_str})", opts)
-except re.error as e:
-    die(1, f"Bad regex {old_str} ({e.msg})")
+    r = regex.compile(regex_str, opts)
+    split_regex = regex.compile(f"({regex_str})", opts)
+except regex.error as e:
+    die(1, f"Bad regex {old_str} ({e})")
 
 total_files = 0
 matched_files = 0
@@ -390,8 +406,8 @@ for filename in files:
 
         # Create the output file
         try:
-            o, tmp_path = tempfile.mkstemp("", ".tmp.")
-            o = os.fdopen(o, "wb")
+            tmp_o, tmp_path = tempfile.mkstemp("", ".tmp.")
+            o = os.fdopen(tmp_o, "wb")
         except OSError as e:
             warn(f"Skipping {filename}: cannot create temp file; error: {e}")
             continue
@@ -449,7 +465,7 @@ for filename in files:
                 warn(f"Could not guess encoding; using locale default '{encoding}'")
 
     # Do the actual work now
-    matches = replace(f, o, regex, split_regex, old_str, new_str, encoding, filename)
+    matches = replace(f, o, r, split_regex, old_str, new_str, encoding, filename)
 
     f.close()
     o.close()
@@ -509,7 +525,7 @@ for filename in files:
             continue
 
         # Restore the times
-        if args.keep_times:
+        if args.keep_times and perms is not None:
             try:
                 os.utime(filename, (perms.st_atime, perms.st_mtime))
             except OSError as e:
