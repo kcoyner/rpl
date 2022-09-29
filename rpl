@@ -28,8 +28,8 @@ import warnings
 from warnings import warn
 
 from typing import (
-    List, Optional, Union, Type, NoReturn, cast, TypeAlias, Any,
-    Sized, Pattern, IO, BinaryIO, TextIO, TYPE_CHECKING
+    List, Optional, Union, Type, NoReturn, cast,
+    IO, BinaryIO, TextIO, TYPE_CHECKING
 )
 if TYPE_CHECKING:
     from _typeshed import WriteableBuffer
