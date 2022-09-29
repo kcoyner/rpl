@@ -70,6 +70,7 @@ class ChainStream(io.RawIOBase):
         f.read()
     """
     def __init__(self, streams: List[IO[bytes]]):
+        super().__init__()
         self.leftover = b''
         self.stream_iter = iter(streams)
         try:
