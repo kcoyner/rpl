@@ -27,25 +27,26 @@ import tempfile
 import warnings
 from warnings import warn
 
+import regex
+from chardet.universaldetector import UniversalDetector
+
 from typing import (
     List, Optional, Union, Type, NoReturn, cast,
     IO, BinaryIO, TextIO, TYPE_CHECKING
 )
 if TYPE_CHECKING:
     from _typeshed import WriteableBuffer
-import regex
-from chardet.universaldetector import UniversalDetector
 
 
 VERSION = "1.14"
 
 def simple_warning(
         message: Union[Warning, str],
-        category: Type[Warning],
-        filename: str,
-        lineno: int,
+        category: Type[Warning], # pylint: disable=unused-argument
+        filename: str, # pylint: disable=unused-argument
+        lineno: int, # pylint: disable=unused-argument
         file: Optional[TextIO] = sys.stderr,
-        line: Optional[str] = None
+        line: Optional[str] = None # pylint: disable=unused-argument
 ) -> None:
     print(f"\n{parser.prog}: {message}", file)
 warnings.showwarning = simple_warning
@@ -84,12 +85,11 @@ class ChainStream(io.RawIOBase):
         # leftover bytes. If the stream is closed returns b''
         if self.leftover:
             return self.leftover
-        elif self.stream is not None:
+        if self.stream is not None:
             data = self.stream.read(max_length)
             assert data is not None # FIXME: stream cannot be non-blocking
             return data
-        else:
-            return b''
+        return b''
 
     def readinto(self, b: WriteableBuffer) -> int:
         m = memoryview(b) # Allow slicing of the buffer
@@ -114,14 +114,14 @@ class ChainStream(io.RawIOBase):
 def slurp(filename: str) -> str:
     """Read a file into a string, aborting on error."""
     try:
-        return Path(filename).read_text()
-    except IOError as e:
+        return Path(filename).read_text('utf-8')
+    except IOError:
         die(os.EX_DATAERR, f"Could not read file {filename}")
 
 
 def unescape(s: str) -> str:
     r = regex.compile(r'\\([0-7]{1,3}|x[0-9a-fA-F]{2}|[nrtvafb\\])')
-    return r.sub(lambda match: cast(str, eval(f'"{match.group()}"')), s)
+    return r.sub(lambda match: cast(str, eval(f'"{match.group()}"')), s) # pylint: disable=eval-used
 
 def casetype(string: str) -> int:
     # Starts with lower case
@@ -154,13 +154,12 @@ def caselike(model: str, string: str) -> str:
 def replace(
         instream: BinaryIO, outstream: BinaryIO,
         r: regex.Pattern[str], split_regex: regex.Pattern[str],
-        before: str, after: str,
+        after: str,
         encoding: str, filename: str
 ) -> int:
-    patlen = len(before)
-    sum = 0
+    matches = 0
 
-    tonext = u''
+    tonext = ''
     retry_prefix = b''
     while True:
         block = retry_prefix + instream.read(io.DEFAULT_BUFFER_SIZE)
@@ -184,32 +183,29 @@ def replace(
                     err = e
         finally:
             if err is not None:
-                if isinstance(err, UnicodeError):
-                    warn(f"{filename}: decoding error ({err.reason})")
-                else:
-                    warn("Decoding error")
+                warn(f"{filename}: decoding error ({err.reason})")
                 warn("You can specify the encoding with --encoding")
-                return 0
+                return 0 # pylint: disable=lost-exception
 
         parts = split_regex.split(tonext + block_str)
-        sum += len(parts) // (1 + split_regex.groups)
-        tonext = parts[-1] or u''
+        matches += len(parts) // (1 + split_regex.groups)
+        tonext = parts[-1] or ''
 
         results = []
         for i in range(0, len(parts) - split_regex.groups, 1 + split_regex.groups):
             results.append(parts[i])
             if parts[i + 1] != '':
-                replace = r.sub(after, parts[i + 1])
+                replacement = r.sub(after, parts[i + 1])
                 if args.ignore_case == "match":
-                    replace = caselike(parts[i + 1], replace)
-                results.append(replace)
+                    replacement = caselike(parts[i + 1], replacement)
+                results.append(replacement)
 
         joined_parts = ''.join(results)
         outstream.write(joined_parts.encode(encoding=encoding))
 
     outstream.write(tonext.encode(encoding=encoding))
 
-    return sum
+    return matches
 
 
 # Create command line argument parser.
@@ -306,7 +302,7 @@ args = parser.parse_args()
 files = args.file
 
 # If no --glob arguments given, use a match-all glob
-if args.glob == None:
+if args.glob is None:
     args.glob = ['*']
 
 # If no files given, assume stdin
@@ -336,7 +332,7 @@ else:
 
 # Tell the user what is going to happen
 if not args.quiet:
-    warn("{} \"{}\" with \"{}\" ({}; {})".format(
+    warn('{} "{}" with "{}" ({}; {})'.format(
         "Simulating replacement of" if args.dry_run else "Replacing",
         old_str,
         new_str,
@@ -393,7 +389,7 @@ for filename in files:
             if args.verbose:
                 warn(f"Skipping directory {filename}")
             continue
-        elif not S_ISREG(perms.st_mode):
+        if not S_ISREG(perms.st_mode):
             warn(f"Skipping: {filename} (not a regular file)")
             continue
 
@@ -465,17 +461,16 @@ for filename in files:
                 warn(f"Could not guess encoding; using locale default '{encoding}'")
 
     # Do the actual work now
-    matches = replace(f, o, r, split_regex, old_str, new_str, encoding, filename)
+    num_matches = replace(f, o, r, split_regex, new_str, encoding, filename)
 
     f.close()
     o.close()
 
-    if matches == 0:
+    if num_matches == 0:
         if tmp_path is not None:
             os.unlink(tmp_path)
         continue
-    else:
-        matched_files += 1
+    matched_files += 1
 
     if args.dry_run:
         if tmp_path is None:
@@ -490,7 +485,7 @@ for filename in files:
         if not args.quiet:
             print(f"  {fn}", file=sys.stderr)
 
-        total_matches += matches
+        total_matches += num_matches
         continue
 
     if args.prompt:
@@ -531,7 +526,7 @@ for filename in files:
             except OSError as e:
                 warn(f"Error setting timestamps of {filename}: {e}")
 
-    total_matches += matches
+    total_matches += num_matches
 
 
 # We're about to exit, give a summary
