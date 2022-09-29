@@ -48,7 +48,7 @@ def simple_warning(
         file: Optional[TextIO] = sys.stderr,
         line: Optional[str] = None # pylint: disable=unused-argument
 ) -> None:
-    print(f"\n{parser.prog}: {message}", file)
+    print(f"\n{parser.prog}: {message}", file=file or sys.stderr)
 warnings.showwarning = simple_warning
 
 def die(code: int, msg: str) -> NoReturn:
