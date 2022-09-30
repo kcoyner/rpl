@@ -4,7 +4,7 @@ all: rpl.1 README.md
 
 lint:
 	mypy --strict rpl
-	pylint --disable=C,R,fixme rpl
+	pylint --disable=C,fixme,too-many-locals,too-many-branches,too-many-statements rpl
 
 check:
 	./rpl --version && \

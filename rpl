@@ -26,21 +26,21 @@ import sys
 import tempfile
 import warnings
 from warnings import warn
+from typing import (
+    List, Optional, Union, Type, NoReturn, cast,
+    IO, BinaryIO, TextIO, TYPE_CHECKING,
+)
 
 import regex
 from chardet.universaldetector import UniversalDetector
 
-from typing import (
-    List, Optional, Union, Type, NoReturn, cast,
-    IO, BinaryIO, TextIO, TYPE_CHECKING
-)
 if TYPE_CHECKING:
     from _typeshed import WriteableBuffer
 
 
 VERSION = "1.14"
 
-def simple_warning(
+def simple_warning( # pylint: disable=too-many-arguments
         message: Union[Warning, str],
         category: Type[Warning], # pylint: disable=unused-argument
         filename: str, # pylint: disable=unused-argument
@@ -154,9 +154,8 @@ def caselike(model: str, string: str) -> str:
 
 def replace(
         instream: BinaryIO, outstream: BinaryIO,
-        r: regex.Pattern[str], split_regex: regex.Pattern[str],
-        after: str,
-        encoding: str, filename: str
+        old_regex: regex.Pattern[str], new_pattern: str,
+        encoding: str,
 ) -> int:
     matches = 0
 
@@ -168,35 +167,26 @@ def replace(
             break
 
         try:
-            err = None
             block_str = block.decode(encoding=encoding)
             retry_prefix = b''
         except UnicodeDecodeError as e:
             # Try carrying invalid input over to next iteration in case it's
             # just incomplete
-            err = e
             if e.start > 0:
                 retry_prefix = block[e.start:]
-                try:
-                    block_str = block[:e.start].decode(encoding=encoding)
-                    err = None
-                except UnicodeDecodeError as e:
-                    err = e
-        finally:
-            if err is not None:
-                warn(f"{filename}: decoding error ({err.reason})")
-                warn("You can specify the encoding with --encoding")
-                return 0 # pylint: disable=lost-exception
+                block_str = block[:e.start].decode(encoding=encoding)
+            else:
+                raise e
 
-        parts = split_regex.split(tonext + block_str)
-        matches += len(parts) // (1 + split_regex.groups)
+        parts = old_regex.split(tonext + block_str)
+        matches += len(parts) // (1 + old_regex.groups)
         tonext = parts[-1] or ''
 
         results = []
-        for i in range(0, len(parts) - split_regex.groups, 1 + split_regex.groups):
+        for i in range(0, len(parts) - old_regex.groups, 1 + old_regex.groups):
             results.append(parts[i])
             if parts[i + 1] != '':
-                replacement = r.sub(after, parts[i + 1])
+                replacement = old_regex.sub(new_pattern, parts[i + 1])
                 if args.ignore_case == "match":
                     replacement = caselike(parts[i + 1], replacement)
                 results.append(replacement)
@@ -339,7 +329,7 @@ def main() -> None:
             "Simulating replacement of" if args.dry_run else "Replacing",
             old_str,
             new_str,
-            "ignoring case" if args.ignore_case == True else
+            "ignoring case" if args.ignore_case is True else
             ("matching case" if args.ignore_case == "match" else "case sensitive"),
             "whole words only" if args.whole_words else "partial words matched",
         ))
@@ -365,8 +355,7 @@ def main() -> None:
     # Call regex.compile so we get an error if the regex is invalid, & count groups.
     opts = regex.M + (regex.I if args.ignore_case else 0)
     try:
-        r = regex.compile(regex_str, opts)
-        split_regex = regex.compile(f"({regex_str})", opts)
+        old_regex = regex.compile(f"({regex_str})", opts)
     except regex.error as e:
         die(1, f"Bad regex {old_str} ({e})")
 
@@ -398,7 +387,7 @@ def main() -> None:
 
             # Open the input file
             try:
-                f = open(filename, "rb")
+                f = open(filename, "rb") # pylint: disable=consider-using-with
             except IOError as e:
                 warn(f"Skipping {filename}: cannot open for reading; error: {e}")
                 continue
@@ -443,11 +432,13 @@ def main() -> None:
             # large file.
             while scanned_bytes < 1024*1024:
                 next_block = f.read(io.DEFAULT_BUFFER_SIZE)
-                if len(next_block) == 0: break
+                if len(next_block) == 0:
+                    break
                 scanned_bytes += len(next_block)
                 block += next_block
                 detector.feed(next_block)
-                if detector.done: break
+                if detector.done:
+                    break
             f = io.BufferedReader(ChainStream([io.BytesIO(block), f]))
 
             detector.close()
@@ -464,7 +455,12 @@ def main() -> None:
                     warn(f"Could not guess encoding; using locale default '{encoding}'")
 
         # Do the actual work now
-        num_matches = replace(f, o, r, split_regex, new_str, encoding, filename)
+        try:
+            num_matches = replace(f, o, old_regex, new_str, encoding)
+        except UnicodeDecodeError as e:
+            warn(f"{filename}: decoding error ({e.reason})")
+            warn("You can specify the encoding with --encoding")
+            num_matches = 0
 
         f.close()
         o.close()
