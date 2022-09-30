@@ -1,0 +1,6 @@
+# Settings for the runner script
+runner:
+  rpl_options: "--version"
+  grep_options: ""
+  grep_pattern: "ABSOLUTELY NO WARRANTY"
+  grep_file: "executable.stdout"

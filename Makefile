@@ -7,13 +7,9 @@ lint:
 	pylint --disable=C,fixme,too-many-locals,too-many-branches,too-many-statements rpl
 
 check:
-	./rpl --version && \
-	( ./rpl Lorem L-O-R-E-M < lorem.txt | egrep L-O-R-E-M || exit 1 ) && \
-	( ./rpl -iv Lorem L-O-R-E-M < lorem.txt | egrep L-O-R-E-M || exit 1 ) && \
-	( ./rpl -mv lorem loReM < lorem.txt | egrep -i lorem  || exit 1 ) && \
-	( ./rpl -v 'a[a-z]+' 'coffee' < lorem.txt | egrep -i "coffee elit" || exit 1 )
+	pytest --exe-clean-output --exe-runner tests/test-runner.sh
 
-release: lint
+release: lint check
 	git diff --exit-code && \
 	rm -rf ./dist && \
 	mkdir dist && \

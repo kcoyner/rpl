@@ -1,0 +1,6 @@
+# Settings for the runner script
+runner:
+  rpl_options: "Lorem L-O-R-E-M"
+  grep_options: ""
+  grep_pattern: "L-O-R-E-M"
+  grep_file: "executable.stdout"

@@ -1,0 +1,6 @@
+# Settings for the runner script
+runner:
+  rpl_options: "'a[a-z]+' coffee"
+  grep_options: "-i"
+  grep_pattern: "coffee elit"
+  grep_file: "executable.stdout"
