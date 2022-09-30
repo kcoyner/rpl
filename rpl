@@ -527,7 +527,6 @@ def main() -> None:
 
         total_matches += num_matches
 
-
     # We're about to exit, give a summary
     if not args.quiet:
         warn("{} matches {} in {} out of {} file{}".format(
