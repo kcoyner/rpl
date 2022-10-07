@@ -7,7 +7,7 @@ lint:
 	pylint --disable=C,fixme,too-many-locals,too-many-branches,too-many-statements rpl
 
 check:
-	pytest --exe-clean-output --exe-runner tests/test-runner.sh
+	tox
 
 release: lint check
 	git diff --exit-code && \
