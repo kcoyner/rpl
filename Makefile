@@ -1,6 +1,6 @@
 # Makefile for rpl
 
-all: rpl.1 README.md
+all: README.md
 
 lint:
 	mypy --strict rpl
@@ -17,12 +17,6 @@ release: lint check
 	twine upload dist/* && \
 	git tag v$$(python3 setup.py --version) && \
 	git push --tags
-
-clean:
-	rm -f rpl.1
-
-rpl.1: Makefile rpl man-include.1
-	COLUMNS=999 help2man --locale=C.UTF-8 --no-info --name="replace strings in files" --include man-include.1 ./rpl > rpl.1
 
 README.md: rpl README.md.in Makefile
 	cp README.md.in README.md
