@@ -353,7 +353,7 @@ def main() -> None:
     if args.whole_words:
         regex_str = r"\b" + regex_str + r"\b"
     # Call regex.compile so we get an error if the regex is invalid, & count groups.
-    opts = regex.M + (regex.I if args.ignore_case else 0)
+    opts = regex.MULTILINE + (regex.IGNORECASE if args.ignore_case else 0)
     try:
         old_regex = regex.compile(f"({regex_str})", opts)
     except regex.error as e:
