@@ -2,14 +2,8 @@
 
 all: README.md
 
-lint:
-	mypy --strict rpl
-	pylint --disable=C,fixme,too-many-locals,too-many-branches,too-many-statements rpl
-
-check:
-	tox
-
-release: lint check
+release:
+	tox && \
 	git diff --exit-code && \
 	rm -rf ./dist && \
 	mkdir dist && \
