@@ -1,6 +1,6 @@
 #!/bin/sh
 
-../../rpl \
+$TOPDIR/rpl \
 	{{rpl_options}} < input.txt \
 	1> executable.stdout \
 	2> executable.stderr
