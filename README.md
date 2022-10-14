@@ -2,16 +2,17 @@
 
 A search/replace utility.
 
-rpl replaces strings with new strings in multiple text files.
+rpl replaces strings with new strings in multiple text files. See the man
+page rpl(1) for more information.
 
 rpl is distributed under the terms of the GNU General Public License; either
 version 3 of the License, or (at your option), any later version. See the
 file COPYING for more details.
 
 ```
-usage: rpl [-h] [--version] [--encoding ENCODING] [-E] [-i] [-m] [-w] [-b]
-           [-q] [-v] [-s] [-e] [-F] [--files] [-x GLOB] [-R] [-p] [-f] [-d]
-           OLD-TEXT NEW-TEXT [FILE [FILE ...]]
+usage: rpl [-h] [--version] [--encoding ENCODING] [-i] [-m] [-w] [-b] [-q]
+           [-v] [-s] [-e] [-F] [--files] [-x GLOB] [-R] [-p] [-f] [-d]
+           OLD-TEXT NEW-TEXT [FILE ...]
 
 Search and replace text in files.
 
@@ -20,11 +21,10 @@ positional arguments:
   NEW-TEXT
   FILE                  `-' or no FILE argument means standard input
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
   --encoding ENCODING   specify character set encoding
-  -E, --extended-regex  use extended regular expression module `regex'
   -i, --ignore-case     search case-insensitively
   -m, --match-case      ignore case when searching, but try to match case of
                         replacement to case of original, either capitalized,
