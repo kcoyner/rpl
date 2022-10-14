@@ -32,6 +32,7 @@ from typing import (
 )
 
 import regex
+from regex import RegexFlag
 from chardet.universaldetector import UniversalDetector
 
 if TYPE_CHECKING:
@@ -353,7 +354,9 @@ def main() -> None:
     if args.whole_words:
         regex_str = r"\b" + regex_str + r"\b"
     # Call regex.compile so we get an error if the regex is invalid, & count groups.
-    opts = regex.MULTILINE + (regex.IGNORECASE if args.ignore_case else 0)
+    opts = RegexFlag.VERSION1 + RegexFlag.MULTILINE
+    if args.ignore_case:
+        opts += RegexFlag.IGNORECASE
     try:
         old_regex = regex.compile(f"({regex_str})", opts)
     except regex.error as e:
