@@ -1,4 +1,4 @@
-# Makefile for rpl
+# Makefile for rpl maintainer tasks
 
 all: README.md
 
