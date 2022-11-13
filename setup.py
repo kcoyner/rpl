@@ -1,7 +1,6 @@
 import os
 from build_manpages.build_manpages import get_install_cmd
 from setuptools import setup
-from setuptools.command.install import install
 from distutils.command.build import build
 
 class rpl_build(build):
@@ -13,6 +12,6 @@ class rpl_build(build):
 setup(
     cmdclass={
         'build': rpl_build,
-        'install': get_install_cmd(install),
+        'install': get_install_cmd(),
     }
 )
